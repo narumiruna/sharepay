@@ -1,7 +1,7 @@
-from payshare import Currency
-from payshare import Member
-from payshare import Payment
-from payshare import settle_up
+from sharepay import Currency
+from sharepay import Member
+from sharepay import Payment
+from sharepay import settle_up
 
 
 def main() -> None:

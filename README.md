@@ -1,4 +1,4 @@
-# payshare
+# sharepay
 
 TODO
 - [ ] support exchange rate
