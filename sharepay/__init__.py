@@ -4,4 +4,3 @@ from .member import Member
 from .payment import Payment
 from .project import Project
 from .rate import query_rate
-from .utils import settle_up

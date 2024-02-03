@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+from typing import Optional
 
 from pydantic import BaseModel
 from pydantic import Field
@@ -18,24 +19,34 @@ class Project(BaseModel):
     currency: Currency = Field(default=Currency.TWD)
     payments: list[Payment] = Field(default_factory=list)
     debts: list[Debt] = Field(default_factory=list)
+    alias: dict[str, str] = Field(default_factory=dict)
 
-    def add_member(self, member: Member) -> Project:
-        if member.name not in self.members:
-            self.members[member.name] = member
-        return self
+    def create_payment(
+        self, amount: float, payer_name: str, member_names: list[str], currency: Optional[str] = None
+    ) -> Payment:
+        self.add_member(payer_name)
+        for name in member_names:
+            self.add_member(name)
 
-    def add_payment(self, payment: Payment) -> Project:
-        self.add_member(payment.payer)
-        for m in payment.members:
-            self.add_member(m)
+        if currency is None:
+            currency = self.currency
 
-        self.payments.append(payment)
-        self.debts += payment.debts()
+        p = Payment(
+            amount=amount,
+            currency=currency,
+            payer=self.members[payer_name],
+            members=[self.members[name] for name in member_names],
+        )
 
-    def add_payments(self, payments: list[Payment]) -> Project:
-        for payment in payments:
-            self.add_payment(payment)
-        return self
+        self.payments.append(p)
+        self.debts += p.debts()
+
+    def add_member(self, name: str) -> None:
+        if name in self.members:
+            return
+
+        m = Member(name=name)
+        self.members[name] = m
 
     def reset_balance(self) -> None:
         for m in self.members.values():

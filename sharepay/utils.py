@@ -1,20 +1,25 @@
-import copy
+import io
 
-from .member import Member
+import pandas as pd
+import requests
 
 
-def settle_up(members: list[Member] | dict[str, Member]) -> None:
-    if isinstance(members, dict):
-        members = list(members.values())
+def read_csv_from_google_sheet(url: str) -> pd.DataFrame:
+    resp = requests.get(url)
+    df = pd.read_csv(io.BytesIO(resp.content))
+    df.fillna("", inplace=True)
+    return df
 
-    members = copy.deepcopy(members)
 
-    while len(members) > 1:
-        members = sorted(members, key=lambda x: -x.balance)
+def parse_name(df: pd.DataFrame) -> list[str]:
+    names = set()
 
-        richest = members[0]
-        poorest = members.pop()
-        amount = poorest.balance
+    for row in df["creditor"].astype(str):
+        for s in row.split(","):
+            names.add(s.lower().strip())
 
-        print(f"{poorest.name: <6} 匯給 {richest.name: <6} {-amount: >10.2f} TWD")
-        richest.balance += amount
+    for row in df["debator"].astype(str):
+        for s in row.split(","):
+            names.add(s.lower().strip())
+
+    return list(names)
