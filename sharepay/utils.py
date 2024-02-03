@@ -11,15 +11,33 @@ def read_csv_from_google_sheet(url: str) -> pd.DataFrame:
     return df
 
 
-def parse_name(df: pd.DataFrame) -> list[str]:
-    names = set()
+def parse_name(s: str) -> str:
+    s = s.strip().lower()
 
-    for row in df["creditor"].astype(str):
-        for s in row.split(","):
-            names.add(s.lower().strip())
+    if s == "":
+        msg = f"invalid name: {s}"
+        raise ValueError(msg)
 
-    for row in df["debator"].astype(str):
-        for s in row.split(","):
-            names.add(s.lower().strip())
+    return s
 
-    return list(names)
+
+def parse_float(s: str) -> float:
+    if s == "":
+        return 0
+    return float(s.replace(",", ""))
+
+
+def parse_currency(s: str) -> str:
+    return s.strip().upper()
+
+
+def parse_names(raw: str) -> list[str]:
+    res = []
+
+    if raw == "":
+        raise ValueError("empty string")
+
+    for s in raw.split(","):
+        res += [parse_name(s)]
+
+    return res

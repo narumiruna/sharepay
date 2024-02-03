@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 from typing import Optional
 
+import pandas as pd
 from pydantic import BaseModel
 from pydantic import Field
 
@@ -11,6 +12,10 @@ from .member import Member
 from .payment import Debt
 from .payment import Payment
 from .rate import query_rate
+from .utils import parse_currency
+from .utils import parse_float
+from .utils import parse_name
+from .utils import parse_names
 
 
 class Project(BaseModel):
@@ -81,3 +86,15 @@ class Project(BaseModel):
 
             print(f"{poorest.name: <6} -> {richest.name: <6} {-amount: >10.2f}")
             richest.balance += amount
+
+    @classmethod
+    def from_df(cls, df: pd.DataFrame, alias: dict | None = None) -> Project:
+        project = cls(name="df", alias=alias or {})
+        for _, row in df.iterrows():
+            project.create_payment(
+                amount=parse_float(row["amount"]),
+                payer_name=parse_name(row["creditor"]),
+                member_names=parse_names(row["debator"]),
+                currency=parse_currency(row["currency"]),
+            )
+        return project
