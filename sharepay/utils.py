@@ -21,10 +21,13 @@ def parse_name(s: str) -> str:
     return s
 
 
-def parse_float(s: str) -> float:
-    if s == "":
+def parse_float(v: str | float) -> float:
+    if isinstance(v, float):
+        return v
+
+    if v == "":
         return 0
-    return float(s.replace(",", ""))
+    return float(v.replace(",", ""))
 
 
 def parse_currency(s: str) -> str:

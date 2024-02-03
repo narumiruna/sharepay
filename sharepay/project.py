@@ -27,7 +27,7 @@ class Project(BaseModel):
     alias: dict[str, str] = Field(default_factory=dict)
 
     def create_payment(
-        self, amount: float, payer_name: str, member_names: list[str], currency: Optional[str] = None
+        self, amount: float, payer_name: str, member_names: list[str], currency: str | None = None
     ) -> Payment:
         self.add_member(payer_name)
         for name in member_names:
@@ -93,8 +93,8 @@ class Project(BaseModel):
         for _, row in df.iterrows():
             project.create_payment(
                 amount=parse_float(row["amount"]),
-                payer_name=parse_name(row["creditor"]),
-                member_names=parse_names(row["debator"]),
+                payer_name=parse_name(row["payer"]),
+                member_names=parse_names(row["members"]),
                 currency=parse_currency(row["currency"]),
             )
         return project
