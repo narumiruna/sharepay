@@ -1,13 +1,13 @@
 from wise.rate import RateRequest
 
-STORE = {}
+_store = {}
 
 
 def query_rate(source: str, target: str) -> float:
     symbol = f"{source}/{target}"
-    if symbol in STORE:
-        return STORE[symbol]
+    if symbol in _store:
+        return _store[symbol]
 
     rate = RateRequest(source=source, target=target).do()
-    STORE[symbol] = rate.value
+    _store[symbol] = rate.value
     return rate.value
