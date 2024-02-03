@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import copy
-from typing import Optional
 
 import pandas as pd
 from pydantic import BaseModel
