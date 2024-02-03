@@ -1,5 +1,5 @@
 # sharepay
 
 TODO
-- [ ] support exchange rate
+- [x] support exchange rate
 - [ ] export/import json

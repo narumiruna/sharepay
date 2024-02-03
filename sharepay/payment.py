@@ -17,7 +17,7 @@ class Payment(BaseModel):
     members: list[Member] = Field(default_factory=list)
     time: datetime = Field(default_factory=datetime.now)
 
-    def add_member(self, member) -> Payment:
+    def add_member(self, member: Member) -> Payment:
         self.members.append(member)
         return self
 
@@ -26,6 +26,7 @@ class Payment(BaseModel):
 
         num_members = len(self.members)
         avg_amount = self.amount / num_members
+
         for m in self.members:
             if m == self.payer:
                 continue
@@ -36,9 +37,6 @@ class Payment(BaseModel):
                 currency=self.currency,
                 amount=avg_amount,
             )
-            m.balance -= avg_amount
-            self.payer.balance += avg_amount
-
-            debts += [debt]
+            debts.append(debt)
 
         return debts
