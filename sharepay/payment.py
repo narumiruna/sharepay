@@ -4,6 +4,8 @@ from datetime import datetime
 
 from pydantic import BaseModel
 from pydantic import Field
+from pydantic import field_serializer
+from pydantic import field_validator
 
 from .currency import Currency
 from .debt import Debt
@@ -16,6 +18,21 @@ class Payment(BaseModel):
     payer: Member
     members: list[Member] = Field(default_factory=list)
     time: datetime = Field(default_factory=datetime.now)
+
+    @field_serializer("time")
+    def serialize_time(self, v: datetime) -> str:
+        return v.isoformat()
+
+    @field_validator("time")
+    def validate_time(cls, v) -> datetime:
+        if isinstance(v, datetime):
+            return v
+        elif isinstance(v, str):
+            return datetime.fromisoformat(v)
+        elif isinstance(v, int):
+            return datetime.fromtimestamp(v)
+        else:
+            raise ValueError(f"invalid time: {v}")
 
     def add_member(self, member: Member) -> Payment:
         self.members.append(member)
