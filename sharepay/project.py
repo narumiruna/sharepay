@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 
 import pandas as pd
+from loguru import logger
 from pydantic import BaseModel
 from pydantic import Field
 
@@ -11,10 +12,6 @@ from .member import Member
 from .payment import Debt
 from .payment import Payment
 from .rate import query_rate
-from .utils import parse_currency
-from .utils import parse_float
-from .utils import parse_name
-from .utils import parse_names
 
 
 class Project(BaseModel):
@@ -28,6 +25,9 @@ class Project(BaseModel):
     def create_payment(
         self, amount: float, payer_name: str, member_names: list[str], currency: str | None = None
     ) -> Payment:
+        payer_name = payer_name.lower().strip()
+        member_names = [name.lower().strip() for name in member_names]
+
         self.add_member(payer_name)
         for name in member_names:
             self.add_member(name)
@@ -35,22 +35,25 @@ class Project(BaseModel):
         if currency is None:
             currency = self.currency
 
-        p = Payment(
+        payment = Payment(
             amount=amount,
             currency=currency,
             payer=self.members[payer_name],
             members=[self.members[name] for name in member_names],
         )
 
-        self.payments.append(p)
-        self.debts += p.debts()
+        self.payments.append(payment)
+        self.debts += payment.debts()
+
+        return payment
 
     def add_member(self, name: str) -> None:
+        name = name.lower().strip()
+
         if name in self.members:
             return
 
-        m = Member(name=name)
-        self.members[name] = m
+        self.members[name] = Member(name=name)
 
     def reset_balance(self) -> None:
         for m in self.members.values():
@@ -90,10 +93,14 @@ class Project(BaseModel):
     def from_df(cls, df: pd.DataFrame, alias: dict | None = None) -> Project:
         project = cls(name="df", alias=alias or {})
         for _, row in df.iterrows():
+            if row.isna().any():
+                logger.debug("NaN value found: {}, skip", row.to_dict())
+                continue
+
             project.create_payment(
-                amount=parse_float(row["amount"]),
-                payer_name=parse_name(row["payer"]),
-                member_names=parse_names(row["members"]),
-                currency=parse_currency(row["currency"]),
+                amount=row["amount"],
+                payer_name=row["payer"].lower().strip(),
+                member_names=row["members"].replace(" ", "").lower().split(","),
+                currency=row["currency"].upper(),
             )
         return project
