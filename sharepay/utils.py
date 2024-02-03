@@ -1,7 +1,13 @@
 import io
+import json
 
 import pandas as pd
 import requests
+
+
+def save_json(obj, f) -> None:
+    with open(f, "w") as f:
+        json.dump(obj, f, indent=4, ensure_ascii=False)
 
 
 def read_csv_from_google_sheet(url: str) -> pd.DataFrame:
