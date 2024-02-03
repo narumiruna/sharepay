@@ -86,12 +86,12 @@ class Project(BaseModel):
             poorest = members.pop()
             amount = poorest.balance
 
-            print(f"{poorest.name: <6} -> {richest.name: <6} {-amount: >10.2f}")
+            print(f"{poorest.name: <6} -> {richest.name: <6} {-amount: >10.2f} {self.currency}")
             richest.balance += amount
 
     @classmethod
-    def from_df(cls, df: pd.DataFrame, alias: dict | None = None) -> Project:
-        project = cls(name="df", alias=alias or {})
+    def from_df(cls, df: pd.DataFrame, alias: dict | None = None, currency: str | None = None) -> Project:
+        project = cls(name="df", alias=alias or {}, currency=currency or "TWD")
         for _, row in df.iterrows():
             if row.isna().any():
                 logger.debug("NaN value found: {}, skip", row.to_dict())

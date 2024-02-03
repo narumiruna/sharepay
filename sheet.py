@@ -6,7 +6,7 @@ def main() -> None:
     url = "https://docs.google.com/spreadsheets/d/1fW-WCfRLrqzMnCVUQnGRnRy0PKMkFp4kcihIpHiDgdQ/export?format=csv"
 
     df = read_csv_from_google_sheet(url)
-    p = Project.from_df(df)
+    p = Project.from_df(df, currency="USD")
     p.settle_up()
 
 
