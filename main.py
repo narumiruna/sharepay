@@ -6,29 +6,32 @@ from payshare import settle_up
 
 def main() -> None:
     members = Member.from_names(["narumi", "dogiko", "ben", "john"])
-    narumi = members["narumi"]
-    dogiko = members["dogiko"]
-    ben = members["ben"]
-    john = members["john"]
 
     debts = []
     debts += Payment(
         amount=300,
         currency=Currency.JPY,
-        payer=narumi,
-        members=[narumi, dogiko, ben],
+        payer=members["narumi"],
+        members=[members["narumi"], members["dogiko"], members["ben"]],
     ).debts()
-    debts += Payment(amount=900, currency=Currency.JPY, payer=dogiko, members=[narumi, dogiko, ben]).debts()
-    debts += Payment(amount=600, currency=Currency.JPY, payer=ben, members=[john, john]).debts()
+    debts += Payment(
+        amount=900,
+        currency=Currency.JPY,
+        payer=members["dogiko"],
+        members=[members["narumi"], members["dogiko"], members["ben"]],
+    ).debts()
+    debts += Payment(
+        amount=600, currency=Currency.JPY, payer=members["ben"], members=[members["john"], members["john"]]
+    ).debts()
 
     for d in debts:
         print(d)
 
-    s = 0
-    for _, v in members.items():
-        s += v.balance
-        print(v)
-    assert s == 0
+    x = 0
+    for _, m in members.items():
+        x += m.balance
+        print(m)
+    assert x == 0
 
     settle_up(list(members.values()))
 
