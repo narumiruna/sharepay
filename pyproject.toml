@@ -11,6 +11,7 @@ wise = {git = "https://github.com/narumiruna/wise.git"}
 requests = "^2.31.0"
 pandas = "^2.2.0"
 loguru = "^0.7.2"
+click = "^8.1.7"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.2"
