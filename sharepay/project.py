@@ -52,6 +52,11 @@ class Project(BaseModel):
         for m in self.members.values():
             m.balance = 0
 
+    def get_alias(self, member: Member) -> Member:
+        if member.name in self.alias:
+            return self.members[self.alias[member.name]]
+        return member
+
     def cal_balance(self) -> None:
         for d in self.debts:
             amount = d.amount
@@ -59,8 +64,8 @@ class Project(BaseModel):
                 rate = query_rate(d.currency, self.currency)
                 amount *= rate
 
-            d.creditor.balance += amount
-            d.debtor.balance -= amount
+            self.get_alias(d.creditor).balance += amount
+            self.get_alias(d.debtor).balance -= amount
 
     def settle_up(self) -> None:
         self.reset_balance()
