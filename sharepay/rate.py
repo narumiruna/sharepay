@@ -42,6 +42,12 @@ class RateRequest(BaseModel):
 
 
 def query_rate(source: str, target: str) -> float:
+    source = source.upper()
+    target = target.upper()
+
+    if source == target:
+        return 1.0
+
     symbol = f"{source}/{target}"
     if symbol in _store:
         return _store[symbol]

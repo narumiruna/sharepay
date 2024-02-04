@@ -69,10 +69,7 @@ class SharePay(BaseModel):
 
     def cal_balance(self) -> None:
         for d in self.debts:
-            amount = d.amount
-            if d.currency != self.currency:
-                rate = query_rate(d.currency, self.currency)
-                amount *= rate
+            amount = d.amount * query_rate(d.currency, self.currency)
 
             self.get_alias(d.creditor).balance += amount
             self.get_alias(d.debtor).balance -= amount
