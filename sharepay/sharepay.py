@@ -17,7 +17,7 @@ from .utils import read_csv_from_google_sheet
 default_currency = Currency.TWD
 
 
-class Project(BaseModel):
+class SharePay(BaseModel):
     name: str
     members: dict[str, Member] = Field(default_factory=dict)
     currency: Currency = Field(default=default_currency)
@@ -97,7 +97,7 @@ class Project(BaseModel):
             richest.balance += amount
 
     @classmethod
-    def from_df(cls, df: pd.DataFrame, alias: dict | None = None, currency: str | None = None) -> Project:
+    def from_df(cls, df: pd.DataFrame, alias: dict | None = None, currency: str | None = None) -> SharePay:
         project = cls(name="df", alias=alias or {}, currency=currency or default_currency)
         for _, row in df.iterrows():
             if row.isna().any():
@@ -113,6 +113,6 @@ class Project(BaseModel):
         return project
 
     @classmethod
-    def from_google_sheet(cls, url: str, alias: dict | None = None, currency: str | None = None) -> Project:
+    def from_google_sheet(cls, url: str, alias: dict | None = None, currency: str | None = None) -> SharePay:
         df = read_csv_from_google_sheet(url)
         return cls.from_df(df, alias=alias or {}, currency=currency or default_currency)
