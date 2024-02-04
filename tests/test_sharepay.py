@@ -4,8 +4,8 @@ from sharepay.sharepay import SharePay
 
 def test_sharepay():
     s = SharePay(name="test")
-    s.create_payment(amount=300, payer_name="a", member_names=["a", "b", "c"], currency=Currency.TWD)
-    s.create_payment(amount=200, payer_name="b", member_names=["b", "c"], currency=Currency.TWD)
+    s.add_payment(amount=300, payer_name="a", member_names=["a", "b", "c"], currency=Currency.TWD)
+    s.add_payment(amount=200, payer_name="b", member_names=["b", "c"], currency=Currency.TWD)
     s.settle_up()
 
     assert s.members["a"].balance == 300 * 2 / 3

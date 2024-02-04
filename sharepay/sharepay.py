@@ -25,7 +25,7 @@ class SharePay(BaseModel):
     debts: list[Debt] = Field(default_factory=list)
     alias: dict[str, str] = Field(default_factory=dict)
 
-    def create_payment(
+    def add_payment(
         self, amount: float, payer_name: str, member_names: list[str], currency: str | None = None
     ) -> Payment:
         payer_name = payer_name.lower().strip()
@@ -101,7 +101,7 @@ class SharePay(BaseModel):
                 logger.debug("NaN value found: {}, skip", row.to_dict())
                 continue
 
-            project.create_payment(
+            project.add_payment(
                 amount=row["amount"],
                 payer_name=row["payer"].lower().strip(),
                 member_names=row["members"].replace(" ", "").lower().split(","),
