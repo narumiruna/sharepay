@@ -77,7 +77,7 @@ class Project(BaseModel):
             self.get_alias(d.creditor).balance += amount
             self.get_alias(d.debtor).balance -= amount
 
-    def settle_up(self) -> None:
+    def settle_up(self, epsilon: float = 1e-6) -> None:
         self.reset_balance()
         self.cal_balance()
 
@@ -88,6 +88,10 @@ class Project(BaseModel):
             richest = members[0]
             poorest = members.pop()
             amount = poorest.balance
+
+            # ignore small amount
+            if abs(amount) < epsilon:
+                break
 
             print(f"{poorest.name: <6} -> {richest.name: <6} {-amount: >10.2f} {self.currency}")
             richest.balance += amount
