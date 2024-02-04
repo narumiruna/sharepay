@@ -3,7 +3,7 @@ from sharepay import SharePay
 
 
 def main() -> None:
-    project = SharePay(name="Sendai", currency=Currency.JPY, alias={"yoan": "john"})
+    project = SharePay(name="Sendai", currency=Currency.TWD, alias={"yoan": "john"})
 
     project.add_payment(amount=300, currency="JPY", payer_name="narumi", member_names=["narumi", "dogiko", "ben"])
     project.add_payment(amount=600, currency="JPY", payer_name="dogiko", member_names=["dogiko", "ben", "john"])
