@@ -24,12 +24,10 @@ class Payment(BaseModel):
         return v.isoformat()
 
     @field_validator("time", mode="before")
-    def validate_time(cls, v: datetime | str | int) -> datetime:
+    @classmethod
+    def parse_time(cls, v: datetime | str) -> datetime:
         if isinstance(v, str):
             return dateutil.parser.parse(v)
-
-        if isinstance(v, int):
-            return datetime.fromtimestamp(v)
 
         return v
 

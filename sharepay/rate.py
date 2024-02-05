@@ -18,7 +18,8 @@ class Rate(BaseModel):
     time: datetime
 
     @field_validator("time", mode="before")
-    def validate_time(cls, v: datetime | int) -> datetime:
+    @classmethod
+    def convert_int(cls, v: datetime | int) -> datetime:
         if isinstance(v, int):
             return datetime.fromtimestamp(v // 1000)
 

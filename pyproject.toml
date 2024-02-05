@@ -6,7 +6,7 @@ authors = ["narumi <toucans-cutouts0f@icloud.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-pydantic = "^2.5.3"
+pydantic = "^2.6.1"
 requests = "^2.31.0"
 pandas = "^2.2.0"
 loguru = "^0.7.2"

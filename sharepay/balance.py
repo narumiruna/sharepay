@@ -13,5 +13,6 @@ class Balance(BaseModel):
     currency: Currency = Field(default=Currency.TWD)
 
     @field_validator("owner")
+    @classmethod
     def validate_owner(cls, v: str) -> str:
         return v.lower().strip()
