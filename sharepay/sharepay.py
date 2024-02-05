@@ -60,8 +60,8 @@ class SharePay(BaseModel):
         for d in self.debts:
             amount = d.amount * query_rate(d.currency, self.currency)
 
-            self.balances[d.creditor].value += amount
-            self.balances[d.debtor].value -= amount
+            self.balances[self.alias.get(d.creditor, d.creditor)].value += amount
+            self.balances[self.alias.get(d.debtor, d.debtor)].value -= amount
 
     def settle_up(self, epsilon: float = 1e-6) -> list[Transaction]:
         self.reset_balance()

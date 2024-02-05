@@ -34,8 +34,8 @@ def test_sharepay_settle_up() -> None:
     transactions = s.settle_up()
 
     assert len(transactions) == 1
-    assert transactions[0].sender.owner == "c"
-    assert transactions[0].recipient.owner == "a"
+    assert transactions[0].sender == "c"
+    assert transactions[0].recipient == "a"
     assert transactions[0].amount == 200
 
 
