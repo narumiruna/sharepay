@@ -5,7 +5,7 @@ lint:
 	poetry run ruff check .
 
 test:
-	poetry run pytest -v -s --cov=. tests
+	poetry run pytest -v -s --cov=sharepay tests
 
 publish:
 	poetry build -f wheel
