@@ -53,8 +53,8 @@ class SharePay(BaseModel):
         self.balances[owner] = Balance(owner=owner, currency=self.currency)
 
     def reset_balance(self) -> None:
-        for m in self.balances.values():
-            m.value = 0
+        for b in self.balances.values():
+            b.value = 0
 
     def cal_balance(self) -> None:
         for d in self.debts:
