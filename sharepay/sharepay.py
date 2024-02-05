@@ -12,6 +12,7 @@ from .member import Member
 from .payment import Debt
 from .payment import Payment
 from .rate import query_rate
+from .transaction import Transaction
 from .utils import read_csv_from_google_sheet
 
 default_currency = Currency.TWD
@@ -74,24 +75,38 @@ class SharePay(BaseModel):
             self.get_alias(d.creditor).balance += amount
             self.get_alias(d.debtor).balance -= amount
 
-    def settle_up(self, epsilon: float = 1e-6) -> None:
+    def settle_up(self, epsilon: float = 1e-6) -> list[Transaction]:
         self.reset_balance()
         self.cal_balance()
 
+        transactions = []
         members = copy.deepcopy(list(self.members.values()))
         while len(members) > 1:
             members = sorted(members, key=lambda x: -x.balance)
 
-            richest = members[0]
-            poorest = members.pop()
-            amount = poorest.balance
+            recipient = members[0]
+            sender = members.pop()
+            amount = sender.balance
 
             # ignore small amount
             if abs(amount) < epsilon:
                 break
 
-            print(f"{poorest.name: <6} -> {richest.name: <6} {-amount: >10.2f} {self.currency}")
-            richest.balance += amount
+            transactions.append(
+                Transaction(
+                    sender=sender,
+                    recipient=recipient,
+                    amount=-amount,
+                    currency=self.currency,
+                )
+            )
+
+            recipient.balance += amount
+
+        for t in transactions:
+            logger.info(t)
+
+        return transactions
 
     @classmethod
     def from_df(cls, df: pd.DataFrame, alias: dict | None = None, currency: str | None = None) -> SharePay:
