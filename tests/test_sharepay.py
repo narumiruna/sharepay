@@ -23,3 +23,15 @@ def test_sharepay_settle_up() -> None:
     assert transactions[0].sender.name == "c"
     assert transactions[0].recipient.name == "a"
     assert transactions[0].amount == 200
+
+
+def test_sharepay_alias() -> None:
+    s = SharePay(name="test", alias={"c": "a"})
+    s.add_payment(amount=300, payer_name="a", member_names=["a", "b", "c"], currency=Currency.TWD)
+    s.add_payment(amount=200, payer_name="b", member_names=["b", "c"], currency=Currency.TWD)
+    transactions = s.settle_up()
+
+    assert len(transactions) == 0
+    assert s.members["a"].balance == 0
+    assert s.members["b"].balance == 0
+    assert s.members["c"].balance == 0
