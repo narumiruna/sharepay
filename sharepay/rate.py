@@ -17,14 +17,12 @@ class Rate(BaseModel):
     value: float
     time: datetime
 
-    @field_validator("time")
-    def validate_time(cls, v) -> datetime:
-        if isinstance(v, datetime):
-            return v
-        elif isinstance(v, int):
+    @field_validator("time", mode="before")
+    def validate_time(cls, v: datetime | int) -> datetime:
+        if isinstance(v, int):
             return datetime.fromtimestamp(v // 1000)
-        else:
-            raise ValueError(f"invalid time: {v}")
+
+        return v
 
 
 class RateRequest(BaseModel):
