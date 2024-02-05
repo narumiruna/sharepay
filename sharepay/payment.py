@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+import dateutil.parser
 from pydantic import BaseModel
 from pydantic import Field
 from pydantic import field_serializer
@@ -23,16 +24,15 @@ class Payment(BaseModel):
     def serialize_time(self, v: datetime) -> str:
         return v.isoformat()
 
-    @field_validator("time")
-    def validate_time(cls, v) -> datetime:
-        if isinstance(v, datetime):
-            return v
-        elif isinstance(v, str):
-            return datetime.fromisoformat(v)
-        elif isinstance(v, int):
+    @field_validator("time", mode="before")
+    def validate_time(cls, v: datetime | str | int) -> datetime:
+        if isinstance(v, str):
+            return dateutil.parser.parse(v)
+
+        if isinstance(v, int):
             return datetime.fromtimestamp(v)
-        else:
-            raise ValueError(f"invalid time: {v}")
+
+        return v
 
     def debts(self) -> list[Debt]:
         debts = []
