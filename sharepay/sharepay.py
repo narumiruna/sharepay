@@ -13,7 +13,7 @@ from .payment import Debt
 from .payment import Payment
 from .rate import query_rate
 from .transaction import Transaction
-from .utils import read_csv_from_google_sheet
+from .utils import read_google_sheet
 
 default_currency = Currency.TWD
 
@@ -125,6 +125,6 @@ class SharePay(BaseModel):
         return project
 
     @classmethod
-    def from_google_sheet(cls, url: str, alias: dict | None = None, currency: str | None = None) -> SharePay:
-        df = read_csv_from_google_sheet(url)
+    def from_sheet(cls, url: str, alias: dict | None = None, currency: str | None = None) -> SharePay:
+        df = read_google_sheet(url)
         return cls.from_df(df, alias=alias or {}, currency=currency or default_currency)

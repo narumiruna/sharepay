@@ -10,7 +10,7 @@ def save_json(obj, f) -> None:
         json.dump(obj, f, indent=4, ensure_ascii=False)
 
 
-def read_csv_from_google_sheet(url: str) -> pd.DataFrame:
+def read_google_sheet(url: str) -> pd.DataFrame:
     df = pd.read_csv(
         io.BytesIO(requests.get(url).content),
         dtype={"amount": float, "currency": str, "payer": str, "members": str},
