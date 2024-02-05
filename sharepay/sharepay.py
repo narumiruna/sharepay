@@ -44,13 +44,13 @@ class SharePay(BaseModel):
 
         return payment
 
-    def add_balance(self, name: str) -> None:
-        name = name.lower().strip()
+    def add_balance(self, owner: str) -> None:
+        owner = owner.lower().strip()
 
-        if name in self.balances:
+        if owner in self.balances:
             return
 
-        self.balances[name] = Balance(owner=name, currency=self.currency)
+        self.balances[owner] = Balance(owner=owner, currency=self.currency)
 
     def reset_balance(self) -> None:
         for m in self.balances.values():
