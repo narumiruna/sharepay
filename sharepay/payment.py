@@ -10,14 +10,13 @@ from pydantic import field_validator
 
 from .currency import Currency
 from .debt import Debt
-from .member import Member
 
 
 class Payment(BaseModel):
     amount: float
     currency: Currency
-    payer: Member
-    members: list[Member] = Field(default_factory=list)
+    payer: str
+    members: list[str] = Field(default_factory=list)
     time: datetime = Field(default_factory=datetime.now)
 
     @field_serializer("time")
