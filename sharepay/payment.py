@@ -34,7 +34,7 @@ class Payment(BaseModel):
         else:
             raise ValueError(f"invalid time: {v}")
 
-    def debts(self) -> Debt:
+    def debts(self) -> list[Debt]:
         debts = []
 
         num_members = len(self.members)
