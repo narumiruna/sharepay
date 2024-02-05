@@ -56,11 +56,6 @@ class SharePay(BaseModel):
         for m in self.balances.values():
             m.value = 0
 
-    # def get_alias(self, balance: str) -> str:
-    #     if balance.owner in self.alias:
-    #         return self.balances[self.alias[balance.owner]]
-    #     return balance
-
     def cal_balance(self) -> None:
         for d in self.debts:
             amount = d.amount * query_rate(d.currency, self.currency)

@@ -8,7 +8,6 @@ from pydantic import Field
 from pydantic import field_serializer
 from pydantic import field_validator
 
-from .balance import Balance
 from .currency import Currency
 from .debt import Debt
 
