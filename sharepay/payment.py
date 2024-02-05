@@ -34,10 +34,6 @@ class Payment(BaseModel):
         else:
             raise ValueError(f"invalid time: {v}")
 
-    def add_member(self, member: Member) -> Payment:
-        self.members.append(member)
-        return self
-
     def debts(self) -> Debt:
         debts = []
 
