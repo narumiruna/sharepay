@@ -10,7 +10,7 @@ def test_sharepay_currency() -> None:
     assert s.currency == Currency.TWD
     assert s.payments[0].currency == Currency.JPY
 
-    assert s.balances["a"].value != 300 * 2 / 3
+    assert s.balances["a"].value != -300 * 2 / 3
     assert s.balances["b"].value == s.balances["b"].value
 
 
@@ -20,9 +20,9 @@ def test_sharepay_balance() -> None:
     s.add_payment(amount=200, payer="b", members=["b", "c"], currency=Currency.TWD)
     s.settle_up()
 
-    assert s.balances["a"].value == 300 * 2 / 3
-    assert s.balances["b"].value == -300 / 3 + 200 / 2
-    assert s.balances["c"].value == -300 / 3 - 200 / 2
+    assert s.balances["a"].value == -300 * 2 / 3
+    assert s.balances["b"].value == 300 / 3 - 200 / 2
+    assert s.balances["c"].value == 300 / 3 + 200 / 2
 
     assert sum([m.value for m in s.balances.values()]) == 0
 
