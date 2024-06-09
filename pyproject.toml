@@ -17,6 +17,9 @@ pytest = "^7.4.2"
 pytest-cov = "^4.1.0"
 ruff = "^0.1.8"
 toml = "^0.10.2"
+types-python-dateutil = "^2.9.0.20240316"
+types-requests = "^2.32.0.20240602"
+pandas-stubs = "^2.2.2.240603"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
