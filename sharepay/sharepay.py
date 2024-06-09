@@ -26,7 +26,7 @@ class SharePay(BaseModel):
     debts: list[Debt] = Field(default_factory=list)
     alias: dict[str, str] = Field(default_factory=dict)
 
-    def add_payment(self, amount: float, payer: str, members: list[str], currency: str | None = None) -> Payment:
+    def add_payment(self, amount: float, payer: str, members: list[str], currency: Currency | None = None) -> Payment:
         payer = payer.lower().strip()
         members = [name.lower().strip() for name in members]
 
@@ -97,7 +97,7 @@ class SharePay(BaseModel):
         return transactions
 
     @classmethod
-    def from_df(cls, df: pd.DataFrame, alias: dict | None = None, currency: str | None = None) -> SharePay:
+    def from_df(cls, df: pd.DataFrame, alias: dict | None = None, currency: Currency | None = None) -> SharePay:
         project = cls(name="df", alias=alias or {}, currency=currency or default_currency)
         for _, row in df.iterrows():
             if row.isna().any():
@@ -113,6 +113,6 @@ class SharePay(BaseModel):
         return project
 
     @classmethod
-    def from_sheet(cls, url: str, alias: dict | None = None, currency: str | None = None) -> SharePay:
+    def from_sheet(cls, url: str, alias: dict | None = None, currency: Currency | None = None) -> SharePay:
         df = read_google_sheet(url)
         return cls.from_df(df, alias=alias or {}, currency=currency or default_currency)

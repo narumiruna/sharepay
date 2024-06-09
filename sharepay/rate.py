@@ -8,7 +8,7 @@ from pydantic import field_validator
 from requests.utils import default_headers
 
 _default_timeout = 10
-_store = {}
+_store: dict[str, float] = {}
 
 
 class Rate(BaseModel):
