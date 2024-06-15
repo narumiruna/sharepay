@@ -8,8 +8,6 @@ from pydantic import BaseModel
 from pydantic import field_validator
 from requests.utils import default_headers
 
-DEFAULT_TIMEOUT = 10
-
 
 class Rate(BaseModel):
     source: str
@@ -35,7 +33,7 @@ class RateRequest(BaseModel):
             "https://wise.com/rates/live",
             params=self.model_dump(),
             headers=default_headers(),
-            timeout=DEFAULT_TIMEOUT,
+            timeout=10,
         )
         return Rate(**resp.json())
 
