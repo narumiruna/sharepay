@@ -15,13 +15,13 @@ from .rate import query_rate
 from .transaction import Transaction
 from .utils import read_google_sheet
 
-default_currency = Currency.TWD
+DEFAULT_CURRENCY = Currency.TWD
 
 
 class SharePay(BaseModel):
     name: str
     balances: dict[str, Balance] = Field(default_factory=dict)
-    currency: Currency = Field(default=default_currency)
+    currency: Currency = Field(default=DEFAULT_CURRENCY)
     payments: list[Payment] = Field(default_factory=list)
     debts: list[Debt] = Field(default_factory=list)
     alias: dict[str, str] = Field(default_factory=dict)
@@ -98,7 +98,7 @@ class SharePay(BaseModel):
 
     @classmethod
     def from_df(cls, df: pd.DataFrame, alias: dict | None = None, currency: Currency | None = None) -> SharePay:
-        project = cls(name="df", alias=alias or {}, currency=currency or default_currency)
+        project = cls(name="df", alias=alias or {}, currency=currency or DEFAULT_CURRENCY)
         for _, row in df.iterrows():
             if row.isna().any():
                 logger.debug("NaN value found: {}, skip", row.to_dict())
@@ -115,4 +115,4 @@ class SharePay(BaseModel):
     @classmethod
     def from_sheet(cls, url: str, alias: dict | None = None, currency: Currency | None = None) -> SharePay:
         df = read_google_sheet(url)
-        return cls.from_df(df, alias=alias or {}, currency=currency or default_currency)
+        return cls.from_df(df, alias=alias or {}, currency=currency or DEFAULT_CURRENCY)
