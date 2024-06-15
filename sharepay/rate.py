@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from functools import cache
 
 import requests
 from pydantic import BaseModel
@@ -40,6 +41,7 @@ class RateRequest(BaseModel):
         return Rate(**resp.json())
 
 
+@cache
 def query_rate(source: str, target: str) -> float:
     source = source.upper()
     target = target.upper()
