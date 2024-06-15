@@ -53,19 +53,19 @@ class SharePay(BaseModel):
         self.balances[owner] = Balance(owner=owner, currency=self.currency)
 
     def reset_balance(self) -> None:
-        for b in self.balances.values():
-            b.value = 0
+        for balance in self.balances.values():
+            balance.value = 0
 
-    def cal_balance(self) -> None:
-        for d in self.debts:
-            amount = d.amount * query_rate(d.currency, self.currency)
+    def calculate_balance(self) -> None:
+        for debt in self.debts:
+            amount = debt.amount * query_rate(debt.currency, self.currency)
 
-            self.balances[self.alias.get(d.creditor, d.creditor)].value -= amount
-            self.balances[self.alias.get(d.debtor, d.debtor)].value += amount
+            self.balances[self.alias.get(debt.creditor, debt.creditor)].value -= amount
+            self.balances[self.alias.get(debt.debtor, debt.debtor)].value += amount
 
     def settle_up(self, epsilon: float = 1e-6) -> list[Transaction]:
         self.reset_balance()
-        self.cal_balance()
+        self.calculate_balance()
 
         transactions = []
         balances = copy.deepcopy(list(self.balances.values()))
