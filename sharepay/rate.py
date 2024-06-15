@@ -7,8 +7,8 @@ from pydantic import BaseModel
 from pydantic import field_validator
 from requests.utils import default_headers
 
-_default_timeout = 10
-_store: dict[str, float] = {}
+DEFAULT_TIMEOUT = 10
+STORE: dict[str, float] = {}
 
 
 class Rate(BaseModel):
@@ -35,7 +35,7 @@ class RateRequest(BaseModel):
             "https://wise.com/rates/live",
             params=self.model_dump(),
             headers=default_headers(),
-            timeout=_default_timeout,
+            timeout=DEFAULT_TIMEOUT,
         )
         return Rate(**resp.json())
 
@@ -48,9 +48,9 @@ def query_rate(source: str, target: str) -> float:
         return 1.0
 
     symbol = f"{source}/{target}"
-    if symbol in _store:
-        return _store[symbol]
+    if symbol in STORE:
+        return STORE[symbol]
 
     rate = RateRequest(source=source, target=target).do()
-    _store[symbol] = rate.value
+    STORE[symbol] = rate.value
     return rate.value
