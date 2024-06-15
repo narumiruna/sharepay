@@ -9,7 +9,6 @@ from pydantic import field_validator
 from requests.utils import default_headers
 
 DEFAULT_TIMEOUT = 10
-STORE: dict[str, float] = {}
 
 
 class Rate(BaseModel):
@@ -49,10 +48,5 @@ def query_rate(source: str, target: str) -> float:
     if source == target:
         return 1.0
 
-    symbol = f"{source}/{target}"
-    if symbol in STORE:
-        return STORE[symbol]
-
     rate = RateRequest(source=source, target=target).do()
-    STORE[symbol] = rate.value
     return rate.value
