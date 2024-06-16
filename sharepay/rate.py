@@ -4,6 +4,7 @@ from datetime import datetime
 from functools import cache
 
 import requests
+from loguru import logger
 from pydantic import BaseModel
 from pydantic import field_validator
 from requests.utils import default_headers
@@ -47,4 +48,5 @@ def query_rate(source: str, target: str) -> float:
         return 1.0
 
     rate = RateRequest(source=source, target=target).do()
+    logger.info("{}/{}: {}", source, target, rate.value)
     return rate.value
