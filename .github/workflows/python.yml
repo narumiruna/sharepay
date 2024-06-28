@@ -20,7 +20,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-      - uses: chartboost/ruff-action@v1
+      - name: Lint
+        run: |
+          pipx install ruff
+          ruff check .
       - name: Install dependencies
         run: pip install .
       - name: Test
