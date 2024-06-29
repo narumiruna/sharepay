@@ -1,10 +1,11 @@
+from sharepay import Currency
 from sharepay import SharePay
 
 
 def main() -> None:
     url = "https://docs.google.com/spreadsheets/d/1fW-WCfRLrqzMnCVUQnGRnRy0PKMkFp4kcihIpHiDgdQ/export?format=csv"
 
-    p = SharePay.from_sheet(url, currency="TWD")
+    p = SharePay.from_sheet(url, currency=Currency.TWD)
     p.settle_up()
 
 
