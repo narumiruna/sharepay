@@ -3,18 +3,17 @@ from __future__ import annotations
 from datetime import datetime
 from functools import cache
 
-import requests
+import httpx
 from loguru import logger
 from pydantic import BaseModel
 from pydantic import field_validator
-from requests.utils import default_headers
 
 
 class Rate(BaseModel):
     source: str
     target: str
     value: float
-    time: datetime
+    time: datetime | int
 
     @field_validator("time", mode="before")
     @classmethod
@@ -30,13 +29,13 @@ class RateRequest(BaseModel):
     target: str
 
     def do(self) -> Rate:
-        resp = requests.get(
+        resp = httpx.get(
             "https://wise.com/rates/live",
             params=self.model_dump(),
-            headers=default_headers(),
             timeout=10,
         )
-        return Rate(**resp.json())
+        resp.raise_for_status()
+        return Rate.model_validate(resp.json())
 
 
 @cache

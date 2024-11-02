@@ -17,7 +17,7 @@ class Payment(BaseModel):
     currency: Currency
     payer: str
     members: list[str] = Field(default_factory=list)
-    time: datetime = Field(default_factory=datetime.now)
+    time: datetime | str = Field(default_factory=datetime.now)
 
     @field_serializer("time")
     def serialize_time(self, v: datetime) -> str:
