@@ -13,7 +13,7 @@ class Rate(BaseModel):
     source: str
     target: str
     value: float
-    time: datetime
+    time: datetime | int
 
     @field_validator("time", mode="before")
     @classmethod
