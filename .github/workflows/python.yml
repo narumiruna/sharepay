@@ -3,36 +3,36 @@ name: Python
 on:
   workflow_dispatch:
   push:
-    branches: ["main"]
+    branches:
+      - main
   pull_request:
-    branches: ["main"]
+    branches:
+      - main
 
 jobs:
   python:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.11", "3.12", "3.13"]
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v3
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: pip
+          enable-cache: true
+      - name: Install Python
+        run: uv python install ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: uv sync
       - name: Lint
-        run: |
-          pipx install ruff
-          ruff check .
+        run: uv run ruff check .
       - name: Type check
-        run: |
-          pip install mypy
-          mypy --install-types --non-interactive .
+        run: uv run mypy --install-types --non-interactive .
       - name: Test
-        run: |
-          pip install .
-          pip install pytest pytest-cov
-          pytest -v -s --cov=sharepay --cov-report=xml tests
+        run: uv run pytest -v -s --cov=src --cov-report=xml tests
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}

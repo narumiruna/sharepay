@@ -1,8 +1,8 @@
 import io
 import json
 
+import httpx
 import pandas as pd
-import requests
 
 
 def save_json(obj, f) -> None:
@@ -12,7 +12,7 @@ def save_json(obj, f) -> None:
 
 def read_google_sheet(url: str) -> pd.DataFrame:
     df = pd.read_csv(
-        io.BytesIO(requests.get(url).content),
+        io.BytesIO(httpx.get(url).content),
         dtype={"amount": float, "currency": str, "payer": str, "members": str},
         thousands=",",
     )
