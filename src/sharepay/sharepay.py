@@ -52,6 +52,23 @@ class SharePay(BaseModel):
 
         self.balances[owner] = Balance(owner=owner, currency=self.currency)
 
+    def add_member(self, member: str) -> None:
+        """
+        Add a new member to the balances if not already present.
+        """
+        member = member.lower().strip()
+        if member not in self.balances:
+            self.balances[member] = Balance(owner=member, currency=self.currency)
+            logger.info(f"Member {member} added to balances.")
+        else:
+            logger.info(f"Member {member} already exists in balances.")
+
+    def get_members(self) -> list[str]:
+        """
+        Get the list of members in the balances.
+        """
+        return list(self.balances.keys())
+
     def reset_balance(self) -> None:
         for balance in self.balances.values():
             balance.value = 0
@@ -95,6 +112,19 @@ class SharePay(BaseModel):
             logger.info(t)
 
         return transactions
+
+    def delete_payment(self, payment_id: str) -> bool:
+        """
+        Delete a payment by its id.
+        """
+        for i, payment in enumerate(self.payments):
+            if payment.id == payment_id:
+                del self.payments[i]
+                self.debts = [debt for debt in self.debts if debt not in payment.debts()]
+                logger.info(f"Payment with id {payment_id} deleted.")
+                return True
+        logger.info(f"Payment with id {payment_id} not found.")
+        return False
 
     @classmethod
     def from_df(cls, df: pd.DataFrame, alias: dict | None = None, currency: Currency | None = None) -> SharePay:

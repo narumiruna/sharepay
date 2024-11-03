@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SharePay</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            overflow-y: auto;
+            max-height: 90vh;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        input, select, button {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background-color: #f9f9f9;
+            margin: 5px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+    </style>
+    <script>
+        const apiBaseUrl = "http://localhost:8000"; // Adjust this if your API is hosted elsewhere
+
+        async function createTrip() {
+            const name = document.getElementById("trip-name").value;
+            const currency = document.getElementById("trip-currency").value;
+            const alias = {}; // Add alias handling if needed
+            const response = await fetch(`${apiBaseUrl}/create`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                },
+                body: JSON.stringify({ name, currency, alias })
+            });
+            const data = await response.json();
+            alert(data.message);
+            updateTripNames();
+        }
+
+        async function addMember() {
+            const trip_name = document.getElementById("member-trip-select").value;
+            const member_name = document.getElementById("member-name").value;
+            const response = await fetch(`${apiBaseUrl}/add_member`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                },
+                body: JSON.stringify({ trip_name, member_name })
+            });
+            const data = await response.json();
+            alert(data.message);
+            updateMembers();
+        }
+
+        async function addPayment() {
+            const trip_name = document.getElementById("payment-trip-select").value;
+            const amount = document.getElementById("payment-amount").value;
+            const payer = document.getElementById("payment-payer").value;
+            const members = Array.from(document.getElementById("payment-members").selectedOptions).map(option => option.value);
+            const currency = document.getElementById("payment-currency").value;
+            const response = await fetch(`${apiBaseUrl}/add_payment`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                },
+                body: JSON.stringify({ trip_name, amount, payer, members, currency })
+            });
+            const data = await response.json();
+            alert(data.message);
+            updatePayments(trip_name).then(() => updateTransactions(trip_name));
+        }
+
+        async function deletePayment(paymentId) {
+            const trip_name = document.getElementById("payment-trip-select").value;
+            const response = await fetch(`${apiBaseUrl}/delete_payment`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                },
+                body: JSON.stringify({ trip_name, payment_id: paymentId })
+            });
+            const data = await response.json();
+            alert(data.message);
+            updatePayments(trip_name).then(() => updateTransactions(trip_name));
+        }
+
+        async function updateTripNames() {
+            const response = await fetch(`${apiBaseUrl}/trips`, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                }
+            });
+            const trips = await response.json();
+            const tripNameSelects = document.querySelectorAll(".trip-name-select");
+            tripNameSelects.forEach(select => {
+                select.innerHTML = "";
+                trips.forEach(trip => {
+                    const option = document.createElement("option");
+                    option.value = trip;
+                    option.text = trip;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        async function updateMembers() {
+            const trip_name = document.getElementById("payment-trip-select").value;
+            const response = await fetch(`${apiBaseUrl}/members?trip_name=${trip_name}`, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                }
+            });
+            const members = await response.json();
+            const membersSelect = document.getElementById("payment-members");
+            const payerSelect = document.getElementById("payment-payer");
+            membersSelect.innerHTML = "";
+            payerSelect.innerHTML = "";
+            members.forEach(member => {
+                const option = document.createElement("option");
+                option.value = member;
+                option.text = member;
+                membersSelect.appendChild(option);
+                payerSelect.appendChild(option.cloneNode(true));
+            });
+        }
+
+        async function updatePayments(trip_name) {
+            await settleUp(trip_name);
+            const response = await fetch(`${apiBaseUrl}/payments?trip_name=${trip_name}`, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                }
+            });
+            const payments = await response.json();
+            const paymentsList = document.getElementById("payments-list");
+            paymentsList.innerHTML = "";
+            payments.forEach((payment, index) => {
+                const listItem = document.createElement("li");
+                listItem.textContent = `Payer: ${payment.payer}, Amount: ${payment.amount}, Currency: ${payment.currency}, Members: ${payment.members.join(", ")}`;
+                const deleteButton = document.createElement("button");
+                deleteButton.textContent = "Delete";
+                deleteButton.onclick = () => deletePayment(index);
+                listItem.appendChild(deleteButton);
+                paymentsList.appendChild(listItem);
+            });
+        }
+
+        async function updateTransactions(trip_name) {
+            const response = await fetch(`${apiBaseUrl}/settle_up?trip_name=${trip_name}`, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                }
+            });
+            const data = await response.json();
+            const transactionsList = document.getElementById("transactions-list");
+            transactionsList.innerHTML = "";
+            data.transactions.forEach(transaction => {
+                const listItem = document.createElement("li");
+                listItem.textContent = `Sender: ${transaction.sender}, Recipient: ${transaction.recipient}, Amount: ${transaction.amount} ${transaction.currency}`;
+                transactionsList.appendChild(listItem);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const token = localStorage.getItem("token");
+            const username = localStorage.getItem("username");
+            if (!token) {
+                document.getElementById("login-register-section").style.display = "block";
+                document.getElementById("app-section").style.display = "none";
+            } else {
+                document.getElementById("login-register-section").style.display = "none";
+                document.getElementById("app-section").style.display = "block";
+                document.getElementById("login-status").innerText = `Logged in as: ${username}`;
+                updateTripNames().then(() => {
+                    const trip_name = document.querySelector(".trip-name-select").value;
+                    updatePayments(trip_name).then(() => updateTransactions(trip_name));
+                    updateMembers();
+                });
+            }
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>SharePay</h1>
+
+        <div id="login-register-section" style="display: none;">
+            <button onclick="window.location.href='/login'">Login</button>
+            <button onclick="window.location.href='/register'">Register</button>
+        </div>
+
+        <div id="app-section" style="display: none;">
+            <h2 id="login-status"></h2>
+
+            <div class="section">
+                <h2>Account</h2>
+                <button onclick="window.location.href='/login'">Login</button>
+                <button onclick="window.location.href='/register'">Register</button>
+            </div>
+
+            <div class="section">
+                <h2>Create Trip</h2>
+                <div class="form-group">
+                    <label for="trip-name">Trip Name</label>
+                    <input type="text" id="trip-name" placeholder="Trip Name">
+                </div>
+                <div class="form-group">
+                    <label for="trip-currency">Currency</label>
+                    <select id="trip-currency">
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                        <option value="JPY">JPY</option>
+                        <option value="TWD">TWD</option>
+                    </select>
+                </div>
+                <button onclick="createTrip()">Create Trip</button>
+            </div>
+
+            <div class="section">
+                <h2>Add Member</h2>
+                <div class="form-group">
+                    <label for="member-trip-select">Select Trip</label>
+                    <select id="member-trip-select" class="trip-name-select"></select>
+                </div>
+                <div class="form-group">
+                    <label for="member-name">Member Name</label>
+                    <input type="text" id="member-name" placeholder="Member Name">
+                </div>
+                <button onclick="addMember()">Add Member</button>
+            </div>
+
+            <div class="section">
+                <h2>Add Payment</h2>
+                <div class="form-group">
+                    <label for="payment-trip-select">Select Trip</label>
+                    <select id="payment-trip-select" class="trip-name-select" onchange="updateMembers(); updatePayments(this.value); updateTransactions(this.value);"></select>
+                </div>
+                <div class="form-group">
+                    <label for="payment-amount">Amount</label>
+                    <input type="number" id="payment-amount" placeholder="Amount">
+                </div>
+                <div class="form-group">
+                    <label for="payment-payer">Payer</label>
+                    <select id="payment-payer"></select>
+                </div>
+                <div class="form-group">
+                    <label for="payment-members">Members</label>
+                    <select id="payment-members" multiple></select>
+                </div>
+                <div class="form-group">
+                    <label for="payment-currency">Currency</label>
+                    <select id="payment-currency">
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                        <option value="JPY">JPY</option>
+                        <option value="TWD">TWD</option>
+                    </select>
+                </div>
+                <button onclick="addPayment()">Add Payment</button>
+            </div>
+
+            <div class="section">
+                <h2>Payments</h2>
+                <ul id="payments-list"></ul>
+            </div>
+
+            <div class="section">
+                <h2>Transactions</h2>
+                <ul id="transactions-list"></ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

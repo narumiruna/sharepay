@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 
 import dateutil.parser
@@ -13,6 +14,7 @@ from .debt import Debt
 
 
 class Payment(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     amount: float
     currency: Currency
     payer: str
