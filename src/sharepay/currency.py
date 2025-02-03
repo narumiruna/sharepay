@@ -7,3 +7,4 @@ class Currency(str, Enum):
     JPY = "JPY"
     TWD = "TWD"
     USD = "USD"
+    CAD = "CAD"
