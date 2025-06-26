@@ -58,6 +58,7 @@
                                     <th>描述</th>
                                     <th>金額</th>
                                     <th>付款人</th>
+                                    <th>操作</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -67,6 +68,11 @@
                                     <td>{{ payment.description }}</td>
                                     <td>{{ payment.amount }} {{ payment.currency }}</td>
                                     <td>{{ payment.payer_username }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editPayment({{ payment.id }})">
+                                            編輯
+                                        </button>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -116,6 +122,19 @@
                         <input type="date" class="form-control" id="paymentDate" name="date">
                     </div>
                     <div class="mb-3">
+                        <label for="paymentPayer" class="form-label">付款人</label>
+                        <select class="form-control" id="paymentPayer" name="payer_trip_member_id" required>
+                            {% for member in members %}
+                            <option value="{{ member.id }}" {% if member.user_id == current_user.id %}selected{% endif %}>
+                                {{ member.name }}
+                                {% if not member.is_registered %}
+                                    <small>(非註冊)</small>
+                                {% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">分攤給</label>
                         <div id="memberCheckboxes">
                             {% for member in members %}
@@ -136,6 +155,79 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
                 <button type="button" class="btn btn-primary" onclick="addPayment()">添加</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 編輯支出Modal -->
+<div class="modal fade" id="editPaymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">編輯支出</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editPaymentForm">
+                    <input type="hidden" id="editPaymentId" name="payment_id">
+                    <div class="mb-3">
+                        <label for="editPaymentAmount" class="form-label">金額</label>
+                        <input type="number" step="0.01" class="form-control" id="editPaymentAmount" name="amount" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPaymentCurrency" class="form-label">幣別</label>
+                        <select class="form-control" id="editPaymentCurrency" name="currency" required>
+                            <option value="TWD">TWD - 新台幣</option>
+                            <option value="USD">USD - 美元</option>
+                            <option value="EUR">EUR - 歐元</option>
+                            <option value="JPY">JPY - 日圓</option>
+                            <option value="GBP">GBP - 英鎊</option>
+                            <option value="CAD">CAD - 加拿大元</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPaymentDescription" class="form-label">描述</label>
+                        <input type="text" class="form-control" id="editPaymentDescription" name="description" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPaymentDate" class="form-label">日期</label>
+                        <input type="date" class="form-control" id="editPaymentDate" name="date">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPaymentPayer" class="form-label">付款人</label>
+                        <select class="form-control" id="editPaymentPayer" name="payer_trip_member_id" required>
+                            {% for member in members %}
+                            <option value="{{ member.id }}">
+                                {{ member.name }}
+                                {% if not member.is_registered %}
+                                    <small>(非註冊)</small>
+                                {% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">分攤給</label>
+                        <div id="editMemberCheckboxes">
+                            {% for member in members %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="{{ member.id }}" id="editMember{{ member.id }}">
+                                <label class="form-check-label" for="editMember{{ member.id }}">
+                                    {{ member.name }}
+                                    {% if not member.is_registered %}
+                                        <small class="text-muted">(非註冊)</small>
+                                    {% endif %}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="updatePayment()">更新</button>
             </div>
         </div>
     </div>
@@ -218,6 +310,7 @@ async function addPayment() {
                 currency: formData.get('currency'),
                 description: formData.get('description'),
                 date: formData.get('date') || null,
+                payer_trip_member_id: parseInt(formData.get('payer_trip_member_id')),
                 split_with: checkedMembers
             })
         });
@@ -304,6 +397,88 @@ async function addMember() {
         }
     } catch (error) {
         alert('添加成員失敗：' + error.message);
+    }
+}
+
+async function editPayment(paymentId) {
+    try {
+        // 獲取支出詳情
+        const response = await fetch(`/api/payments/${paymentId}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (response.ok) {
+            const payment = await response.json();
+            
+            // 填充編輯表單
+            document.getElementById('editPaymentId').value = payment.id;
+            document.getElementById('editPaymentAmount').value = payment.amount;
+            document.getElementById('editPaymentCurrency').value = payment.currency;
+            document.getElementById('editPaymentDescription').value = payment.description;
+            document.getElementById('editPaymentDate').value = payment.date || '';
+            document.getElementById('editPaymentPayer').value = payment.payer_trip_member_id;
+            
+            // 重置所有分攤checkbox
+            document.querySelectorAll('#editMemberCheckboxes input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = payment.split_with.includes(parseInt(checkbox.value));
+            });
+            
+            // 顯示編輯modal
+            new bootstrap.Modal(document.getElementById('editPaymentModal')).show();
+        } else {
+            const error = await response.json();
+            alert(error.detail || '獲取支出詳情失敗');
+        }
+    } catch (error) {
+        alert('獲取支出詳情失敗：' + error.message);
+    }
+}
+
+async function updatePayment() {
+    const form = document.getElementById('editPaymentForm');
+    const formData = new FormData(form);
+    
+    // 獲取選中的成員
+    const checkedMembers = [];
+    document.querySelectorAll('#editMemberCheckboxes input[type="checkbox"]:checked').forEach(checkbox => {
+        checkedMembers.push(parseInt(checkbox.value));
+    });
+    
+    if (checkedMembers.length === 0) {
+        alert('請選擇至少一個分攤成員');
+        return;
+    }
+    
+    const paymentId = document.getElementById('editPaymentId').value;
+    
+    try {
+        const response = await fetch(`/api/payments/${paymentId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                amount: parseFloat(formData.get('amount')),
+                currency: formData.get('currency'),
+                description: formData.get('description'),
+                date: formData.get('date') || null,
+                payer_trip_member_id: parseInt(formData.get('payer_trip_member_id')),
+                split_with: checkedMembers
+            })
+        });
+        
+        if (response.ok) {
+            alert('支出記錄更新成功！');
+            window.location.reload();
+        } else {
+            const error = await response.json();
+            alert(error.detail || '更新失敗');
+        }
+    } catch (error) {
+        alert('更新失敗：' + error.message);
     }
 }
 </script>

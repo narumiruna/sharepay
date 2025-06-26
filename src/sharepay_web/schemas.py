@@ -72,7 +72,8 @@ class PaymentBase(BaseModel):
 
 class PaymentCreate(PaymentBase):
     trip_id: int
-    split_with: list[int]  # 與哪些用戶分攤（用戶ID列表）
+    payer_trip_member_id: int | None = None  # 付款人TripMember ID，可選（默認為當前用戶）
+    split_with: list[int]  # 與哪些用戶分攤（trip_member_id列表）
 
 
 class PaymentInfo(BaseModel):

@@ -257,14 +257,13 @@ async def trip_detail(
     payments = db.query(Payment).filter(Payment.trip_id == trip_id).all()
     payment_list = []
     for payment in payments:
-        payer = db.query(User).filter(User.id == payment.payer_id).first()
         payment_list.append({
             'id': payment.id,
             'amount': payment.amount,
             'currency': payment.currency,
             'description': payment.description,
             'date': payment.date,
-            'payer_username': payer.username
+            'payer_username': payment.payer_name
         })
 
     return templates.TemplateResponse("trip_detail.html", {
@@ -293,9 +292,25 @@ async def add_payment(
         raise HTTPException(status_code=403, detail="無權限在此旅行中添加支出")
 
     # 創建支出記錄
+    # 如果指定了 payer_trip_member_id，使用它；否則找到當前用戶的 TripMember ID
+    payer_trip_member_id = (
+        payment.payer_trip_member_id
+        if hasattr(payment, 'payer_trip_member_id') and payment.payer_trip_member_id
+        else None
+    )
+
+    if not payer_trip_member_id:
+        # 找到當前用戶在此旅行中的 TripMember ID
+        current_user_trip_member = db.query(TripMember).filter(
+            TripMember.trip_id == trip_id,
+            TripMember.user_id == current_user.id
+        ).first()
+        if current_user_trip_member:
+            payer_trip_member_id = current_user_trip_member.id
+
     db_payment = Payment(
         trip_id=trip_id,
-        payer_id=current_user.id,
+        payer_trip_member_id=payer_trip_member_id,
         amount=payment.amount,
         currency=payment.currency,
         description=payment.description,
@@ -344,7 +359,6 @@ async def get_settlement(
     payments = db.query(Payment).filter(Payment.trip_id == trip_id).all()
 
     for payment in payments:
-        payer = db.query(User).filter(User.id == payment.payer_id).first()
         splits = db.query(PaymentSplit).filter(PaymentSplit.payment_id == payment.id).all()
 
         split_members = []
@@ -355,7 +369,7 @@ async def get_settlement(
 
         sharepay.add_payment(
             amount=payment.amount,
-            payer=payer.username,
+            payer=payment.payer_name,
             members=split_members,
             currency=Currency(payment.currency)
         )
@@ -440,6 +454,93 @@ async def add_trip_member(
 
     member_type = "註冊用戶" if user_to_add else "非註冊成員"
     return {"message": f"成員添加成功（{member_type}）", "name": name}
+
+
+@app.get("/api/payments/{payment_id}")
+async def get_payment(
+    payment_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    # 獲取支出記錄
+    payment = db.query(Payment).filter(Payment.id == payment_id).first()
+    if not payment:
+        raise HTTPException(status_code=404, detail="支出記錄不存在")
+
+    # 檢查用戶權限（必須是旅行成員）
+    is_member = db.query(TripMember).filter(
+        TripMember.trip_id == payment.trip_id,
+        TripMember.user_id == current_user.id
+    ).first()
+
+    trip = db.query(Trip).filter(Trip.id == payment.trip_id).first()
+    if not is_member and trip.creator_id != current_user.id:
+        raise HTTPException(status_code=403, detail="無權限查看此支出記錄")
+
+    # 獲取分攤記錄
+    splits = db.query(PaymentSplit).filter(PaymentSplit.payment_id == payment_id).all()
+    split_member_ids = [split.trip_member_id for split in splits]
+
+    return {
+        "id": payment.id,
+        "amount": payment.amount,
+        "currency": payment.currency,
+        "description": payment.description,
+        "date": payment.date.strftime('%Y-%m-%d') if payment.date else None,
+        "payer_trip_member_id": payment.payer_trip_member_id,
+        "split_with": split_member_ids
+    }
+
+
+@app.put("/api/payments/{payment_id}")
+async def update_payment(
+    payment_id: int,
+    payment_data: dict,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    # 獲取支出記錄
+    payment = db.query(Payment).filter(Payment.id == payment_id).first()
+    if not payment:
+        raise HTTPException(status_code=404, detail="支出記錄不存在")
+
+    # 檢查用戶權限（必須是旅行成員）
+    is_member = db.query(TripMember).filter(
+        TripMember.trip_id == payment.trip_id,
+        TripMember.user_id == current_user.id
+    ).first()
+
+    trip = db.query(Trip).filter(Trip.id == payment.trip_id).first()
+    if not is_member and trip.creator_id != current_user.id:
+        raise HTTPException(status_code=403, detail="無權限編輯此支出記錄")
+
+    # 更新支出記錄
+    payment.amount = payment_data.get("amount", payment.amount)
+    payment.currency = payment_data.get("currency", payment.currency)
+    payment.description = payment_data.get("description", payment.description)
+    payment.payer_trip_member_id = payment_data.get("payer_trip_member_id", payment.payer_trip_member_id)
+
+    if payment_data.get("date"):
+        from datetime import datetime
+        payment.date = datetime.strptime(payment_data["date"], '%Y-%m-%d')
+
+    # 刪除舊的分攤記錄
+    db.query(PaymentSplit).filter(PaymentSplit.payment_id == payment_id).delete()
+
+    # 創建新的分攤記錄
+    split_with = payment_data.get("split_with", [])
+    if split_with:
+        split_amount = payment.amount / len(split_with)
+        for trip_member_id in split_with:
+            split = PaymentSplit(
+                payment_id=payment_id,
+                trip_member_id=trip_member_id,
+                amount=split_amount
+            )
+            db.add(split)
+
+    db.commit()
+    return {"message": "支出記錄更新成功"}
 
 
 if __name__ == "__main__":

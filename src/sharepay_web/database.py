@@ -33,7 +33,6 @@ class User(Base):
     # 關聯
     created_trips = relationship("Trip", back_populates="creator")
     memberships = relationship("TripMember", back_populates="user")
-    payments = relationship("Payment", back_populates="payer_user")
 
 
 class Trip(Base):
@@ -80,7 +79,7 @@ class Payment(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     trip_id = Column(Integer, ForeignKey("trips.id"))
-    payer_id = Column(Integer, ForeignKey("users.id"))
+    payer_trip_member_id = Column(Integer, ForeignKey("trip_members.id"))  # 改為關聯到 TripMember
     amount = Column(Float)
     currency = Column(String)
     description = Column(String)
@@ -89,8 +88,15 @@ class Payment(Base):
 
     # 關聯
     trip = relationship("Trip", back_populates="payments")
-    payer_user = relationship("User", back_populates="payments")
+    payer_trip_member = relationship("TripMember")  # 付款人可以是註冊或非註冊成員
     splits = relationship("PaymentSplit", back_populates="payment")
+
+    @property
+    def payer_name(self):
+        """返回付款人名稱"""
+        if self.payer_trip_member:
+            return self.payer_trip_member.display_name
+        return "未知"
 
 
 class PaymentSplit(Base):
