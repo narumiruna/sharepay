@@ -58,13 +58,21 @@ class TripMember(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     trip_id = Column(Integer, ForeignKey("trips.id"))
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # 允許為空，支持非註冊成員
+    guest_name = Column(String, nullable=True)  # 非註冊成員的姓名
     joined_at = Column(DateTime, default=datetime.utcnow)
     is_active = Column(Boolean, default=True)
 
     # 關聯
     trip = relationship("Trip", back_populates="members")
     user = relationship("User", back_populates="memberships")
+
+    @property
+    def display_name(self):
+        """返回顯示名稱：註冊用戶返回 username，非註冊用戶返回 guest_name"""
+        if self.user:
+            return self.user.username
+        return self.guest_name
 
 
 class Payment(Base):
@@ -90,11 +98,12 @@ class PaymentSplit(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     payment_id = Column(Integer, ForeignKey("payments.id"))
-    user_id = Column(Integer, ForeignKey("users.id"))
+    trip_member_id = Column(Integer, ForeignKey("trip_members.id"))  # 改為關聯到 TripMember
     amount = Column(Float)
 
     # 關聯
     payment = relationship("Payment", back_populates="splits")
+    trip_member = relationship("TripMember")
 
 
 def get_db():

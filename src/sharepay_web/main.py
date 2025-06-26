@@ -5,7 +5,9 @@ from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse
+from fastapi.responses import RedirectResponse
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -100,7 +102,7 @@ async def login(user: UserLogin, response: Response, db: Session = Depends(get_d
     access_token = create_access_token(
         data={"sub": authenticated_user.username}, expires_delta=access_token_expires
     )
-    
+
     # 設置 httpOnly cookie
     response.set_cookie(
         key="access_token",
@@ -110,24 +112,27 @@ async def login(user: UserLogin, response: Response, db: Session = Depends(get_d
         secure=False,  # 開發環境設為 False，生產環境應該設為 True
         samesite="lax"
     )
-    
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 def get_current_user_optional(request: Request, db: Session = Depends(get_db)) -> User | None:
     try:
-        from jose import JWTError, jwt
-        from sharepay_web.auth import SECRET_KEY, ALGORITHM
+        from jose import JWTError
+        from jose import jwt
+
+        from sharepay_web.auth import ALGORITHM
+        from sharepay_web.auth import SECRET_KEY
 
         # 嘗試從 cookie 獲取 token
         token = request.cookies.get("access_token")
-        
+
         # 如果 cookie 中沒有，嘗試從 Authorization header 獲取
         if not token:
             auth_header = request.headers.get('Authorization')
             if auth_header and auth_header.startswith('Bearer '):
                 token = auth_header[7:]
-        
+
         if not token:
             return None
 
@@ -140,7 +145,7 @@ def get_current_user_optional(request: Request, db: Session = Depends(get_db)) -
         # 獲取用戶
         user = db.query(User).filter(User.username == username).first()
         return user
-        
+
     except (JWTError, Exception):
         return None
 
@@ -150,7 +155,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     current_user = get_current_user_optional(request, db)
     if not current_user:
         return RedirectResponse(url="/login", status_code=302)
-        
+
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "current_user": current_user
@@ -234,8 +239,19 @@ async def trip_detail(
     if not is_member and trip.creator_id != current_user.id:
         raise HTTPException(status_code=403, detail="無權限查看此旅行")
 
-    # 獲取旅行成員
-    members = db.query(User).join(TripMember).filter(TripMember.trip_id == trip_id).all()
+    # 獲取旅行成員（包括註冊用戶和非註冊成員）
+    trip_members = db.query(TripMember).filter(TripMember.trip_id == trip_id).all()
+
+    # 構建成員列表，包含顯示名稱和ID
+    members = []
+    for tm in trip_members:
+        member_info = {
+            'id': tm.id,
+            'name': tm.display_name,
+            'is_registered': tm.user_id is not None,
+            'user_id': tm.user_id
+        }
+        members.append(member_info)
 
     # 獲取支出記錄
     payments = db.query(Payment).filter(Payment.trip_id == trip_id).all()
@@ -289,12 +305,12 @@ async def add_payment(
     db.commit()
     db.refresh(db_payment)
 
-    # 創建分攤記錄
+    # 創建分攤記錄（split_with 現在包含的是 trip_member_id）
     split_amount = payment.amount / len(payment.split_with)
-    for user_id in payment.split_with:
+    for trip_member_id in payment.split_with:
         split = PaymentSplit(
             payment_id=db_payment.id,
-            user_id=user_id,
+            trip_member_id=trip_member_id,
             amount=split_amount
         )
         db.add(split)
@@ -333,8 +349,9 @@ async def get_settlement(
 
         split_members = []
         for split in splits:
-            member = db.query(User).filter(User.id == split.user_id).first()
-            split_members.append(member.username)
+            trip_member = db.query(TripMember).filter(TripMember.id == split.trip_member_id).first()
+            if trip_member:
+                split_members.append(trip_member.display_name)
 
         sharepay.add_payment(
             amount=payment.amount,
@@ -357,6 +374,72 @@ async def get_settlement(
     ]
 
     return {"transactions": settlement_transactions}
+
+
+@app.post("/api/trips/{trip_id}/members")
+async def add_trip_member(
+    trip_id: int,
+    member_data: dict,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    # 檢查用戶是否有權限（必須是旅行創建者或成員）
+    trip = db.query(Trip).filter(Trip.id == trip_id).first()
+    if not trip:
+        raise HTTPException(status_code=404, detail="旅行不存在")
+
+    is_member = db.query(TripMember).filter(
+        TripMember.trip_id == trip_id,
+        TripMember.user_id == current_user.id
+    ).first()
+
+    if not is_member and trip.creator_id != current_user.id:
+        raise HTTPException(status_code=403, detail="無權限添加成員到此旅行")
+
+    name = member_data.get("name", "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="請提供成員姓名")
+
+    # 嘗試查找註冊用戶
+    user_to_add = db.query(User).filter(User.username == name).first()
+
+    if user_to_add:
+        # 註冊用戶 - 檢查是否已經是成員
+        existing_member = db.query(TripMember).filter(
+            TripMember.trip_id == trip_id,
+            TripMember.user_id == user_to_add.id
+        ).first()
+
+        if existing_member:
+            raise HTTPException(status_code=400, detail="用戶已經是旅行成員")
+
+        # 添加註冊用戶
+        new_member = TripMember(
+            trip_id=trip_id,
+            user_id=user_to_add.id
+        )
+    else:
+        # 非註冊用戶 - 檢查是否已經以guest身份存在
+        existing_guest = db.query(TripMember).filter(
+            TripMember.trip_id == trip_id,
+            TripMember.guest_name == name,
+            TripMember.user_id.is_(None)
+        ).first()
+
+        if existing_guest:
+            raise HTTPException(status_code=400, detail="該名稱的成員已存在")
+
+        # 添加非註冊成員
+        new_member = TripMember(
+            trip_id=trip_id,
+            guest_name=name
+        )
+
+    db.add(new_member)
+    db.commit()
+
+    member_type = "註冊用戶" if user_to_add else "非註冊成員"
+    return {"message": f"成員添加成功（{member_type}）", "name": name}
 
 
 if __name__ == "__main__":
