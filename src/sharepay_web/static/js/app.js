@@ -10,8 +10,24 @@ function checkAuth() {
 }
 
 // 登出功能
-function logout() {
+async function logout() {
+    try {
+        // 調用服務器端登出 API
+        await fetch('/api/logout', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+    } catch (error) {
+        console.error('服務器端登出失敗:', error);
+    }
+
+    // 清除 localStorage 中的 token
     localStorage.removeItem('token');
+
+    // 導向首頁
     window.location.href = '/';
 }
 
@@ -19,26 +35,48 @@ function logout() {
 document.addEventListener('DOMContentLoaded', function() {
     const currentPath = window.location.pathname;
     const protectedPaths = ['/dashboard', '/trip'];
-    
+
     // 檢查是否是受保護的頁面
     const isProtectedPage = protectedPaths.some(path => currentPath.startsWith(path));
-    
+
     if (isProtectedPage && !checkAuth()) {
         window.location.href = '/login';
     }
 });
 
+// 嘗試刷新 access token
+async function refreshToken() {
+    try {
+        const response = await fetch('/api/refresh', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            localStorage.setItem('token', data.access_token);
+            return data.access_token;
+        }
+        return null;
+    } catch (error) {
+        console.error('Token refresh 失敗:', error);
+        return null;
+    }
+}
+
 // API請求助手函數
 async function apiRequest(url, options = {}) {
     const token = localStorage.getItem('token');
-    
+
     const defaultOptions = {
         headers: {
             'Content-Type': 'application/json',
             ...(token && { 'Authorization': `Bearer ${token}` })
         }
     };
-    
+
     const mergedOptions = {
         ...defaultOptions,
         ...options,
@@ -47,17 +85,30 @@ async function apiRequest(url, options = {}) {
             ...options.headers
         }
     };
-    
+
     try {
-        const response = await fetch(url, mergedOptions);
-        
+        let response = await fetch(url, mergedOptions);
+
         if (response.status === 401) {
-            // Token過期或無效
+            // Token可能過期，嘗試刷新
+            const newToken = await refreshToken();
+
+            if (newToken) {
+                // 用新 token 重試請求
+                mergedOptions.headers.Authorization = `Bearer ${newToken}`;
+                response = await fetch(url, mergedOptions);
+
+                if (response.status !== 401) {
+                    return response;
+                }
+            }
+
+            // Refresh 失敗或重試後仍401，導向登入頁
             localStorage.removeItem('token');
             window.location.href = '/login';
             return;
         }
-        
+
         return response;
     } catch (error) {
         console.error('API請求錯誤:', error);
@@ -89,10 +140,10 @@ function showSuccessMessage(message) {
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    
+
     const container = document.querySelector('.container');
     container.insertBefore(alertDiv, container.firstChild);
-    
+
     // 5秒後自動消失
     setTimeout(() => {
         alertDiv.remove();
@@ -107,10 +158,10 @@ function showErrorMessage(message) {
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    
+
     const container = document.querySelector('.container');
     container.insertBefore(alertDiv, container.firstChild);
-    
+
     // 5秒後自動消失
     setTimeout(() => {
         alertDiv.remove();
@@ -129,7 +180,7 @@ function showLoading(element) {
     const originalText = element.textContent;
     element.textContent = '載入中...';
     element.disabled = true;
-    
+
     return function hideLoading() {
         element.textContent = originalText;
         element.disabled = false;
@@ -140,7 +191,7 @@ function showLoading(element) {
 function validateForm(form) {
     const inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
     let isValid = true;
-    
+
     inputs.forEach(input => {
         if (!input.value.trim()) {
             input.classList.add('is-invalid');
@@ -149,7 +200,7 @@ function validateForm(form) {
             input.classList.remove('is-invalid');
         }
     });
-    
+
     return isValid;
 }
 
