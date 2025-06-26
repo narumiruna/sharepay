@@ -10,14 +10,16 @@
                 <h3>登入</h3>
             </div>
             <div class="card-body">
-                <form id="loginForm">
+                <form id="loginForm" autocomplete="on">
                     <div class="mb-3">
                         <label for="username" class="form-label">用戶名</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
+                        <input type="text" class="form-control" id="username" name="username" 
+                               autocomplete="username" required>
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">密碼</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                        <input type="password" class="form-control" id="password" name="password" 
+                               autocomplete="current-password" required>
                     </div>
                     <button type="submit" class="btn btn-primary w-100">登入</button>
                 </form>
