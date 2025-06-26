@@ -1,5 +1,5 @@
-from sharepay import Currency
-from sharepay import SharePay
+from sharepay.currency import Currency
+from sharepay.sharepay import SharePay
 
 
 def main() -> None:
