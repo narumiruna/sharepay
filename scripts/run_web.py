@@ -1,26 +1,29 @@
 #!/usr/bin/env python3
 """
-啟動旅行支出分帳網站
+啟動 SharePay Web 應用程式
+整合了原本的三個啟動腳本功能
 """
 import os
 import sys
 import subprocess
+from pathlib import Path
+
 
 def main():
-    print("🚀 啟動旅行支出分帳網站...")
+    print("🚀 啟動 SharePay Web 應用程式...")
     
     # 確保在項目根目錄
-    project_root = os.path.dirname(__file__)
+    project_root = Path(__file__).parent.parent
     os.chdir(project_root)
     
-    # 檢查uv是否可用
+    # 檢查 uv 是否可用
     try:
         result = subprocess.run(["uv", "--version"], capture_output=True, text=True)
         if result.returncode != 0:
             raise FileNotFoundError("uv not found")
         print("✅ uv 可用")
     except FileNotFoundError:
-        print("❌ 未找到uv，請先安裝uv")
+        print("❌ 未找到 uv，請先安裝 uv")
         print("安裝方法: curl -LsSf https://astral.sh/uv/install.sh | sh")
         return
     
@@ -38,15 +41,16 @@ def main():
     print("訪問 http://localhost:8000 查看網站")
     print("按 Ctrl+C 停止服務器")
     
-    # 使用uv運行uvicorn
-    os.chdir('web')
+    # 使用 uv 運行 uvicorn
     subprocess.run([
         "uv", "run", "uvicorn", 
-        "app.main:app", 
+        "src.sharepay_web.main:app", 
         "--host", "0.0.0.0", 
         "--port", "8000", 
-        "--reload"
+        "--reload",
+        "--reload-dir", "src"
     ])
+
 
 if __name__ == "__main__":
     main()

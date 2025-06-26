@@ -1,7 +1,16 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, ForeignKey, Boolean
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
+
+from sqlalchemy import Boolean
+from sqlalchemy import Column
+from sqlalchemy import DateTime
+from sqlalchemy import Float
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import String
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
+from sqlalchemy.orm import sessionmaker
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./travel_expenses.db"
 
@@ -13,14 +22,14 @@ Base = declarative_base()
 
 class User(Base):
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # 關聯
     created_trips = relationship("Trip", back_populates="creator")
     memberships = relationship("TripMember", back_populates="user")
@@ -29,7 +38,7 @@ class User(Base):
 
 class Trip(Base):
     __tablename__ = "trips"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     description = Column(String)
@@ -37,7 +46,7 @@ class Trip(Base):
     creator_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
     is_active = Column(Boolean, default=True)
-    
+
     # 關聯
     creator = relationship("User", back_populates="created_trips")
     members = relationship("TripMember", back_populates="trip")
@@ -46,13 +55,13 @@ class Trip(Base):
 
 class TripMember(Base):
     __tablename__ = "trip_members"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     trip_id = Column(Integer, ForeignKey("trips.id"))
     user_id = Column(Integer, ForeignKey("users.id"))
     joined_at = Column(DateTime, default=datetime.utcnow)
     is_active = Column(Boolean, default=True)
-    
+
     # 關聯
     trip = relationship("Trip", back_populates="members")
     user = relationship("User", back_populates="memberships")
@@ -60,7 +69,7 @@ class TripMember(Base):
 
 class Payment(Base):
     __tablename__ = "payments"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     trip_id = Column(Integer, ForeignKey("trips.id"))
     payer_id = Column(Integer, ForeignKey("users.id"))
@@ -69,7 +78,7 @@ class Payment(Base):
     description = Column(String)
     date = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # 關聯
     trip = relationship("Trip", back_populates="payments")
     payer_user = relationship("User", back_populates="payments")
@@ -78,12 +87,12 @@ class Payment(Base):
 
 class PaymentSplit(Base):
     __tablename__ = "payment_splits"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     payment_id = Column(Integer, ForeignKey("payments.id"))
     user_id = Column(Integer, ForeignKey("users.id"))
     amount = Column(Float)
-    
+
     # 關聯
     payment = relationship("Payment", back_populates="splits")
 

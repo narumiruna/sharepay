@@ -1,6 +1,7 @@
-from pydantic import BaseModel, EmailStr
-from typing import List, Optional
 from datetime import datetime
+
+from pydantic import BaseModel
+from pydantic import EmailStr
 
 
 class UserBase(BaseModel):
@@ -21,7 +22,7 @@ class User(UserBase):
     id: int
     is_active: bool
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -33,7 +34,7 @@ class Token(BaseModel):
 
 class TripBase(BaseModel):
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     currency: str = "TWD"
 
 
@@ -46,7 +47,7 @@ class TripMemberInfo(BaseModel):
     username: str
     email: str
     joined_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -56,8 +57,8 @@ class Trip(TripBase):
     creator_id: int
     created_at: datetime
     is_active: bool
-    members: List[TripMemberInfo] = []
-    
+    members: list[TripMemberInfo] = []
+
     class Config:
         from_attributes = True
 
@@ -66,12 +67,12 @@ class PaymentBase(BaseModel):
     amount: float
     currency: str
     description: str
-    date: Optional[datetime] = None
+    date: datetime | None = None
 
 
 class PaymentCreate(PaymentBase):
     trip_id: int
-    split_with: List[int]  # 與哪些用戶分攤（用戶ID列表）
+    split_with: list[int]  # 與哪些用戶分攤（用戶ID列表）
 
 
 class PaymentInfo(BaseModel):
@@ -81,7 +82,7 @@ class PaymentInfo(BaseModel):
     description: str
     date: datetime
     payer_username: str
-    
+
     class Config:
         from_attributes = True
 
@@ -91,7 +92,7 @@ class Payment(PaymentBase):
     trip_id: int
     payer_id: int
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
