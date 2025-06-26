@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}{{ trip.name }} - 旅行支出分帳系統{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2>{{ trip.name }}</h2>
+        <p class="text-muted">{{ trip.description or '無描述' }} | 幣別: {{ trip.currency }}</p>
+    </div>
+    <div>
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addPaymentModal">
+            添加支出
+        </button>
+        <button class="btn btn-info" onclick="showSettlement()">
+            查看結算
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>旅行成員</h5>
+            </div>
+            <div class="card-body">
+                {% for member in members %}
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-primary me-2">{{ member.username[0].upper() }}</span>
+                        {{ member.username }}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>支出記錄</h5>
+            </div>
+            <div class="card-body">
+                {% if payments %}
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>描述</th>
+                                    <th>金額</th>
+                                    <th>付款人</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in payments %}
+                                <tr>
+                                    <td>{{ payment.date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ payment.description }}</td>
+                                    <td>{{ payment.amount }} {{ payment.currency }}</td>
+                                    <td>{{ payment.payer_username }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        還沒有支出記錄，點擊「添加支出」開始記錄！
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加支出Modal -->
+<div class="modal fade" id="addPaymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加支出</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addPaymentForm">
+                    <div class="mb-3">
+                        <label for="paymentAmount" class="form-label">金額</label>
+                        <input type="number" step="0.01" class="form-control" id="paymentAmount" name="amount" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="paymentCurrency" class="form-label">幣別</label>
+                        <select class="form-control" id="paymentCurrency" name="currency" required>
+                            <option value="TWD">TWD - 新台幣</option>
+                            <option value="USD">USD - 美元</option>
+                            <option value="EUR">EUR - 歐元</option>
+                            <option value="JPY">JPY - 日圓</option>
+                            <option value="GBP">GBP - 英鎊</option>
+                            <option value="CAD">CAD - 加拿大元</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="paymentDescription" class="form-label">描述</label>
+                        <input type="text" class="form-control" id="paymentDescription" name="description" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="paymentDate" class="form-label">日期</label>
+                        <input type="date" class="form-control" id="paymentDate" name="date">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">分攤給</label>
+                        <div id="memberCheckboxes">
+                            {% for member in members %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="{{ member.id }}" id="member{{ member.id }}">
+                                <label class="form-check-label" for="member{{ member.id }}">
+                                    {{ member.username }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="addPayment()">添加</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 結算Modal -->
+<div class="modal fade" id="settlementModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">結算明細</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="settlementContent">
+                <!-- 結算內容將在這裡顯示 -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 設置默認日期為今天
+document.getElementById('paymentDate').valueAsDate = new Date();
+
+async function addPayment() {
+    const form = document.getElementById('addPaymentForm');
+    const formData = new FormData(form);
+    
+    // 獲取選中的成員
+    const checkedMembers = [];
+    document.querySelectorAll('#memberCheckboxes input[type="checkbox"]:checked').forEach(checkbox => {
+        checkedMembers.push(parseInt(checkbox.value));
+    });
+    
+    if (checkedMembers.length === 0) {
+        alert('請選擇至少一個分攤成員');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/trips/{{ trip.id }}/payments`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                trip_id: {{ trip.id }},
+                amount: parseFloat(formData.get('amount')),
+                currency: formData.get('currency'),
+                description: formData.get('description'),
+                date: formData.get('date') || null,
+                split_with: checkedMembers
+            })
+        });
+        
+        if (response.ok) {
+            alert('支出添加成功！');
+            window.location.reload();
+        } else {
+            const error = await response.json();
+            alert(error.detail || '添加失敗');
+        }
+    } catch (error) {
+        alert('添加失敗：' + error.message);
+    }
+}
+
+async function showSettlement() {
+    try {
+        const response = await fetch(`/api/trips/{{ trip.id }}/settlement`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const transactions = data.transactions;
+            
+            let content = '<h6>結算交易：</h6>';
+            if (transactions.length === 0) {
+                content += '<div class="alert alert-success">所有帳目已平衡，無需結算！</div>';
+            } else {
+                content += '<div class="list-group">';
+                transactions.forEach(transaction => {
+                    content += `
+                        <div class="list-group-item">
+                            <strong>${transaction.from_user}</strong> 需要支付 
+                            <strong>${transaction.amount.toFixed(2)} ${transaction.currency}</strong> 
+                            給 <strong>${transaction.to_user}</strong>
+                        </div>
+                    `;
+                });
+                content += '</div>';
+            }
+            
+            document.getElementById('settlementContent').innerHTML = content;
+            new bootstrap.Modal(document.getElementById('settlementModal')).show();
+        } else {
+            const error = await response.json();
+            alert(error.detail || '獲取結算失敗');
+        }
+    } catch (error) {
+        alert('獲取結算失敗：' + error.message);
+    }
+}
+</script>
+{% endblock %}

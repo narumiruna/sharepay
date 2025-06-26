@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}控制台 - 旅行支出分帳系統{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 id="welcome-message">載入中...</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTripModal">
+        創建新旅行
+    </button>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <h3>我的旅行</h3>
+        <div id="trips-container">
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">載入中...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 創建旅行Modal -->
+<div class="modal fade" id="createTripModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">創建新旅行</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createTripForm">
+                    <div class="mb-3">
+                        <label for="tripName" class="form-label">旅行名稱</label>
+                        <input type="text" class="form-control" id="tripName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tripDescription" class="form-label">描述</label>
+                        <textarea class="form-control" id="tripDescription" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tripCurrency" class="form-label">主要幣別</label>
+                        <select class="form-control" id="tripCurrency" name="currency" required>
+                            <option value="TWD">TWD - 新台幣</option>
+                            <option value="USD">USD - 美元</option>
+                            <option value="EUR">EUR - 歐元</option>
+                            <option value="JPY">JPY - 日圓</option>
+                            <option value="GBP">GBP - 英鎊</option>
+                            <option value="CAD">CAD - 加拿大元</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="createTrip()">創建</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 檢查認證
+if (!localStorage.getItem('token')) {
+    window.location.href = '/login';
+}
+
+// 載入Dashboard數據
+async function loadDashboard() {
+    try {
+        const response = await fetch('/api/dashboard', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            // 更新歡迎訊息
+            document.getElementById('welcome-message').textContent = `歡迎回來，${data.user.username}！`;
+            
+            // 更新旅行列表
+            const tripsContainer = document.getElementById('trips-container');
+            if (data.trips.length > 0) {
+                let tripsHtml = '<div class="row">';
+                data.trips.forEach(trip => {
+                    tripsHtml += `
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">${trip.name}</h5>
+                                    <p class="card-text">${trip.description || '無描述'}</p>
+                                    <p class="card-text">
+                                        <small class="text-muted">幣別: ${trip.currency}</small>
+                                    </p>
+                                    <a href="/trip/${trip.id}" class="btn btn-primary">查看詳情</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                tripsHtml += '</div>';
+                tripsContainer.innerHTML = tripsHtml;
+            } else {
+                tripsContainer.innerHTML = `
+                    <div class="alert alert-info">
+                        <h4>還沒有旅行記錄</h4>
+                        <p>點擊上方的「創建新旅行」按鈕開始記錄您的第一次旅行支出！</p>
+                    </div>
+                `;
+            }
+        } else if (response.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        } else {
+            throw new Error('Failed to load dashboard');
+        }
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+        document.getElementById('trips-container').innerHTML = `
+            <div class="alert alert-danger">
+                載入失敗，請重新整理頁面。
+            </div>
+        `;
+    }
+}
+
+// 頁面載入時執行
+document.addEventListener('DOMContentLoaded', loadDashboard);
+
+async function createTrip() {
+    const form = document.getElementById('createTripForm');
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('/api/trips', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                name: formData.get('name'),
+                description: formData.get('description'),
+                currency: formData.get('currency')
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            alert('旅行創建成功！');
+            // 關閉modal
+            bootstrap.Modal.getInstance(document.getElementById('createTripModal')).hide();
+            // 重新載入數據
+            loadDashboard();
+            // 清空表單
+            document.getElementById('createTripForm').reset();
+        } else {
+            const error = await response.json();
+            alert(error.detail || '創建失敗');
+        }
+    } catch (error) {
+        alert('創建失敗：' + error.message);
+    }
+}
+</script>
+{% endblock %}

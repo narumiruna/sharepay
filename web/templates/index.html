@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="jumbotron bg-light p-5 rounded">
+            <h1 class="display-4">旅行支出分帳系統</h1>
+            <p class="lead">與朋友一起旅行時，輕鬆記錄和分攤所有支出</p>
+            <hr class="my-4">
+            <p>支援多種幣別、自動匯率轉換、智能結算算法</p>
+            <div class="d-flex gap-2">
+                <a class="btn btn-primary btn-lg" href="/register" role="button">開始使用</a>
+                <a class="btn btn-outline-primary btn-lg" href="/login" role="button">登入</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="card-title">💰 支出記錄</h5>
+                <p class="card-text">簡單記錄每筆旅行支出，支援多種幣別</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="card-title">👥 智能分帳</h5>
+                <p class="card-text">自動計算每個人應付的金額，減少結算複雜度</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="card-title">🌍 多幣別支援</h5>
+                <p class="card-text">支援多國幣別，自動匯率轉換</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
