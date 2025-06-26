@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 SharePay is a Python library for splitting expenses and calculating who owes whom in group payments. It supports multiple currencies with automatic exchange rate conversion and can import data from Google Sheets.
 
+The project now includes a **FastAPI web application** (`src/sharepay_web/`) that provides a user-friendly interface for expense tracking and settlement calculations.
+
 ## Development Commands
 
 ### Linting and Formatting
@@ -30,6 +32,17 @@ uv run pytest -v -s --cov=src tests
 uv run pytest tests/test_sharepay.py -v
 uv run pytest tests/test_payment.py -v
 uv run pytest tests/test_rate.py -v
+uv run pytest tests/test_web.py -v
+```
+
+### Web Application
+```bash
+# Start the web application
+make web
+# or
+uv run python scripts/run_web.py
+# or
+uv run uvicorn src.sharepay_web.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ### Building and Publishing
@@ -64,6 +77,15 @@ uv publish
 - **Rate** (`src/sharepay/rate.py`): Exchange rate querying functionality
 - **Utils** (`src/sharepay/utils.py`): Utility functions including Google Sheets integration
 
+### Web Application Components
+
+- **Main App** (`src/sharepay_web/main.py`): FastAPI application with all routes
+- **Database Models** (`src/sharepay_web/database.py`): SQLAlchemy models for users, trips, payments
+- **Authentication** (`src/sharepay_web/auth.py`): JWT-based authentication system with refresh tokens
+- **Schemas** (`src/sharepay_web/schemas.py`): Pydantic models for API request/response validation
+- **Templates** (`src/sharepay_web/templates/`): Jinja2 HTML templates
+- **Static Files** (`src/sharepay_web/static/`): CSS, JavaScript, and other assets
+
 ### Key Features
 
 1. **Multi-currency support**: Automatic conversion using live exchange rates
@@ -71,6 +93,9 @@ uv publish
 3. **Alias support**: Map different names to the same person
 4. **Settlement optimization**: Minimize number of transactions needed
 5. **Logging**: Uses loguru for transaction logging
+6. **Web Interface**: FastAPI-based web application with responsive UI
+7. **User Management**: Registration, authentication, and trip collaboration
+8. **Mixed Member Types**: Support for both registered users and guest members
 
 ### Data Flow
 
@@ -85,11 +110,22 @@ The project uses pytest with coverage reporting. Test files are located in `test
 
 ## Dependencies
 
+### Core Library
 - **pydantic**: Data validation and settings management
 - **pandas**: Data manipulation for Google Sheets import
 - **httpx**: HTTP client for API requests
 - **loguru**: Structured logging
 - **click**: Command-line interface (if CLI features are added)
+
+### Web Application
+- **fastapi**: Modern web framework for building APIs
+- **uvicorn**: ASGI web server
+- **jinja2**: Template engine for HTML rendering
+- **python-multipart**: Form data parsing
+- **sqlalchemy**: ORM for database operations
+- **python-jose**: JWT token handling
+- **passlib**: Password hashing with bcrypt
+- **email-validator**: Email validation utilities
 
 ## Code Style
 
@@ -97,3 +133,5 @@ The project uses pytest with coverage reporting. Test files are located in `test
 - Line length: 120 characters
 - Import sorting: force single-line imports
 - Type hints required (mypy checking enabled)
+- Modern Python features: uses `|` union syntax, `list[T]` generics
+- SQLAlchemy 2.0+ with DeclarativeBase
