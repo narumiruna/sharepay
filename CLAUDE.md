@@ -21,13 +21,15 @@ uv run mypy src/
 
 ### Testing
 ```bash
-# Run tests with coverage
+# Run all tests with coverage
 make test
 # or
 uv run pytest -v -s --cov=src tests
 
 # Run specific test file
 uv run pytest tests/test_sharepay.py -v
+uv run pytest tests/test_payment.py -v
+uv run pytest tests/test_rate.py -v
 ```
 
 ### Building and Publishing
@@ -60,6 +62,7 @@ uv publish
 - **Debt** (`src/sharepay/debt.py`): Represents debt between two members
 - **Transaction** (`src/sharepay/transaction.py`): Final settlement transactions
 - **Rate** (`src/sharepay/rate.py`): Exchange rate querying functionality
+- **Utils** (`src/sharepay/utils.py`): Utility functions including Google Sheets integration
 
 ### Key Features
 
