@@ -90,15 +90,17 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
 @app.post("/api/login", response_model=Token)
 async def login(user: UserLogin, response: Response, db: Session = Depends(get_db)):
     authenticated_user = authenticate_user(db, user.username, user.password)
-    if not authenticated_user:
+    if not authenticated_user or isinstance(authenticated_user, bool):
         raise HTTPException(
             status_code=401,
             detail="用戶名或密碼錯誤",
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(data={"sub": authenticated_user.username}, expires_delta=access_token_expires)
-    refresh_token = create_refresh_token(data={"sub": authenticated_user.username})
+    access_token = create_access_token(
+        data={"sub": str(authenticated_user.username)}, expires_delta=access_token_expires
+    )
+    refresh_token = create_refresh_token(data={"sub": str(authenticated_user.username)})
 
     # 設置 httpOnly cookie
     response.set_cookie(
@@ -275,7 +277,7 @@ async def trip_detail(trip_id: int, request: Request, db: Session = Depends(get_
         db.query(TripMember).filter(TripMember.trip_id == trip_id, TripMember.user_id == current_user.id).first()
     )
 
-    if not is_member and trip.creator_id != current_user.id:
+    if not is_member and (not trip or trip.creator_id != current_user.id):
         raise HTTPException(status_code=403, detail="無權限查看此旅行")
 
     # 獲取旅行成員（包括註冊用戶和非註冊成員）
@@ -342,7 +344,7 @@ async def add_payment(
             db.query(TripMember).filter(TripMember.trip_id == trip_id, TripMember.user_id == current_user.id).first()
         )
         if current_user_trip_member:
-            payer_trip_member_id = current_user_trip_member.id
+            payer_trip_member_id = int(current_user_trip_member.id)
 
     db_payment = Payment(
         trip_id=trip_id,
@@ -382,7 +384,9 @@ async def get_settlement(
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
 
     # 使用SharePay進行結算計算
-    sharepay = SharePay(name=trip.name, currency=Currency(trip.currency))
+    if not trip:
+        raise HTTPException(status_code=404, detail="旅行不存在")
+    sharepay = SharePay(name=str(trip.name), currency=Currency(str(trip.currency)))
 
     # 獲取所有支出並添加到SharePay中
     payments = db.query(Payment).filter(Payment.trip_id == trip_id).all()
@@ -397,7 +401,10 @@ async def get_settlement(
                 split_members.append(trip_member.display_name)
 
         sharepay.add_payment(
-            amount=payment.amount, payer=payment.payer_name, members=split_members, currency=Currency(payment.currency)
+            amount=float(payment.amount),
+            payer=payment.payer_name,
+            members=split_members,
+            currency=Currency(str(payment.currency)),
         )
 
     # 執行結算
@@ -427,7 +434,7 @@ async def add_trip_member(
         db.query(TripMember).filter(TripMember.trip_id == trip_id, TripMember.user_id == current_user.id).first()
     )
 
-    if not is_member and trip.creator_id != current_user.id:
+    if not is_member and (not trip or trip.creator_id != current_user.id):
         raise HTTPException(status_code=403, detail="無權限添加成員到此旅行")
 
     name = member_data.get("name", "").strip()
@@ -486,7 +493,7 @@ async def get_payment(
     )
 
     trip = db.query(Trip).filter(Trip.id == payment.trip_id).first()
-    if not is_member and trip.creator_id != current_user.id:
+    if not is_member and (not trip or trip.creator_id != current_user.id):
         raise HTTPException(status_code=403, detail="無權限查看此支出記錄")
 
     # 獲取分攤記錄
@@ -524,7 +531,7 @@ async def update_payment(
     )
 
     trip = db.query(Trip).filter(Trip.id == payment.trip_id).first()
-    if not is_member and trip.creator_id != current_user.id:
+    if not is_member and (not trip or trip.creator_id != current_user.id):
         raise HTTPException(status_code=403, detail="無權限編輯此支出記錄")
 
     # 更新支出記錄
@@ -536,7 +543,7 @@ async def update_payment(
     if payment_data.get("date"):
         from datetime import datetime
 
-        payment.date = datetime.strptime(payment_data["date"], "%Y-%m-%d")
+        payment.date = datetime.strptime(payment_data["date"], "%Y-%m-%d")  # type: ignore
 
     # 刪除舊的分攤記錄
     db.query(PaymentSplit).filter(PaymentSplit.payment_id == payment_id).delete()
