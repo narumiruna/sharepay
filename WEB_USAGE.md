@@ -9,13 +9,12 @@ make web
 
 ### 方法2: 使用啟動腳本
 ```bash
-uv run python run_web.py
+uv run python scripts/run_web.py
 ```
 
 ### 方法3: 手動啟動
 ```bash
-cd web
-uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+uv run uvicorn src.sharepay_web.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 啟動後訪問: http://localhost:8000
@@ -39,8 +38,10 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 - 創建成功後可在控制台看到旅行卡片
 
 ### 4. 管理旅行成員
-- 目前版本中，旅行創建者會自動成為成員
-- 其他成員可以通過註冊帳號並被邀請加入
+- 旅行創建者會自動成為成員
+- 可以添加註冊用戶（通過用戶名）
+- 可以添加非註冊成員（Guest用戶）
+- 支援混合成員管理
 
 ### 5. 記錄支出
 - 進入旅行詳情頁面
@@ -79,13 +80,15 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 ### 安全認證
 - JWT Token 身份驗證
-- 密碼加密存儲
-- 安全的API端點
+- Access Token + Refresh Token 雙重認證
+- HttpOnly Cookie 安全存儲
+- 密碼 bcrypt 加密存儲
+- 1Password 自動填充支援
 
 ## 🔧 技術架構
 
 ### 後端
-- **框架**: FastAPI 
+- **框架**: FastAPI
 - **資料庫**: SQLite (支援升級至 PostgreSQL/MySQL)
 - **認證**: JWT + bcrypt
 - **ORM**: SQLAlchemy
@@ -104,20 +107,20 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 ```
 sharepay/
-├── web/                     # 網站應用
-│   ├── app/                 # 後端應用
-│   │   ├── main.py          # FastAPI 主應用
-│   │   ├── database.py      # 資料庫模型
-│   │   ├── auth.py          # 認證系統
-│   │   └── schemas.py       # API 數據模型
-│   ├── static/              # 靜態文件
-│   │   ├── css/style.css    # 自定義樣式
-│   │   └── js/app.js        # 前端 JavaScript
-│   ├── templates/           # HTML 模板
-│   └── README.md            # 詳細文檔
-├── src/sharepay/            # 核心邏輯庫
-├── run_web.py               # 啟動腳本
-├── start_web.py             # 備用啟動腳本
+├── src/
+│   ├── sharepay/            # 核心邏輯庫
+│   └── sharepay_web/        # 網站應用
+│       ├── main.py          # FastAPI 主應用
+│       ├── database.py      # 資料庫模型
+│       ├── auth.py          # 認證系統
+│       ├── schemas.py       # API 數據模型
+│       ├── static/          # 靜態文件
+│       │   ├── css/style.css    # 自定義樣式
+│       │   └── js/app.js        # 前端 JavaScript
+│       └── templates/       # HTML 模板
+├── scripts/
+│   └── run_web.py           # 啟動腳本
+├── tests/                   # 測試文件
 └── Makefile                 # 構建工具
 ```
 
@@ -136,7 +139,7 @@ python -c "from src.sharepay import SharePay; print('OK')"
 ```
 
 ### 資料庫問題
-- 資料庫文件自動創建在 `web/travel_expenses.db`
+- 資料庫文件自動創建在 `travel_expenses.db`
 - 如果遇到問題，可以刪除資料庫文件重新開始
 
 ### 匯率問題
@@ -155,6 +158,6 @@ python -c "from src.sharepay import SharePay; print('OK')"
 ## 📞 支援
 
 如有問題請查看:
-1. `web/README.md` - 詳細技術文檔
-2. `CLAUDE.md` - 開發指南
-3. SharePay 核心庫文檔
+1. `CLAUDE.md` - 開發指南
+2. SharePay 核心庫文檔
+3. GitHub Issues
