@@ -33,6 +33,12 @@ uv run pytest tests/test_sharepay.py -v
 uv run pytest tests/test_payment.py -v
 uv run pytest tests/test_rate.py -v
 uv run pytest tests/test_web.py -v
+
+# Run specific test function
+uv run pytest tests/test_sharepay.py::test_function_name -v
+
+# Run tests matching pattern
+uv run pytest -k "test_pattern" -v
 ```
 
 ### Web Application
@@ -81,6 +87,7 @@ uv publish
 
 - **Main App** (`src/sharepay_web/main.py`): FastAPI application with all routes
 - **Database Models** (`src/sharepay_web/database.py`): SQLAlchemy models for users, trips, payments
+  - SQLite database file: `travel_expenses.db` (auto-created in project root)
 - **Authentication** (`src/sharepay_web/auth.py`): JWT-based authentication system with refresh tokens
 - **Schemas** (`src/sharepay_web/schemas.py`): Pydantic models for API request/response validation
 - **Templates** (`src/sharepay_web/templates/`): Jinja2 HTML templates
@@ -135,3 +142,17 @@ The project uses pytest with coverage reporting. Test files are located in `test
 - Type hints required (mypy checking enabled)
 - Modern Python features: uses `|` union syntax, `list[T]` generics
 - SQLAlchemy 2.0+ with DeclarativeBase
+- Pre-commit hooks enabled: runs ruff, ruff-format, and other checks automatically
+
+## Development Setup
+
+```bash
+# Install dependencies
+uv sync
+
+# Install pre-commit hooks (optional but recommended)
+uv run pre-commit install
+
+# Manual pre-commit check
+uv run pre-commit run --all-files
+```
