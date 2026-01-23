@@ -1,3 +1,4 @@
+from datetime import UTC
 from datetime import datetime
 
 from sqlalchemy import Boolean
@@ -30,7 +31,7 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     # 關聯
     created_trips = relationship("Trip", back_populates="creator")
@@ -45,7 +46,7 @@ class Trip(Base):
     description = Column(String)
     currency = Column(String, default="TWD")
     creator_id = Column(Integer, ForeignKey("users.id"))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
     is_active = Column(Boolean, default=True)
 
     # 關聯
@@ -61,7 +62,7 @@ class TripMember(Base):
     trip_id = Column(Integer, ForeignKey("trips.id"))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # 允許為空，支持非註冊成員
     guest_name = Column(String, nullable=True)  # 非註冊成員的姓名
-    joined_at = Column(DateTime, default=datetime.utcnow)
+    joined_at = Column(DateTime, default=lambda: datetime.now(UTC))
     is_active = Column(Boolean, default=True)
 
     # 關聯
@@ -85,8 +86,8 @@ class Payment(Base):
     amount = Column(Float)
     currency = Column(String)
     description = Column(String)
-    date = Column(DateTime, default=datetime.utcnow)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    date = Column(DateTime, default=lambda: datetime.now(UTC))
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     # 關聯
     trip = relationship("Trip", back_populates="payments")
