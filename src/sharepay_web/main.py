@@ -543,7 +543,7 @@ async def update_payment(
     if payment_data.get("date"):
         from datetime import datetime
 
-        payment.date = datetime.strptime(payment_data["date"], "%Y-%m-%d")  # type: ignore
+        payment.date = datetime.strptime(payment_data["date"], "%Y-%m-%d")
 
     # 刪除舊的分攤記錄
     db.query(PaymentSplit).filter(PaymentSplit.payment_id == payment_id).delete()
