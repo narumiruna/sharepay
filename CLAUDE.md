@@ -99,7 +99,6 @@ uv publish
 2. **Google Sheets integration**: Import expense data directly from spreadsheets
 3. **Alias support**: Map different names to the same person
 4. **Settlement optimization**: Minimize number of transactions needed
-5. **Logging**: Uses loguru for transaction logging
 6. **Web Interface**: FastAPI-based web application with responsive UI
 7. **User Management**: Registration, authentication, and trip collaboration
 8. **Mixed Member Types**: Support for both registered users and guest members
@@ -121,7 +120,6 @@ The project uses pytest with coverage reporting. Test files are located in `test
 - **pydantic**: Data validation and settings management
 - **pandas**: Data manipulation for Google Sheets import
 - **httpx**: HTTP client for API requests
-- **loguru**: Structured logging
 - **click**: Command-line interface (if CLI features are added)
 
 ### Web Application

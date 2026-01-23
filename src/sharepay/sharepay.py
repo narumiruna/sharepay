@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import copy
+import logging
 
 import pandas as pd
-from loguru import logger
 from pydantic import BaseModel
 from pydantic import Field
 
@@ -14,6 +14,8 @@ from .payment import Payment
 from .rate import query_rate
 from .transaction import Transaction
 from .utils import read_google_sheet
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_CURRENCY = Currency.TWD
 

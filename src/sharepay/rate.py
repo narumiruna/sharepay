@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from functools import cache
 
 import httpx
-from loguru import logger
 from pydantic import BaseModel
 from pydantic import field_validator
+
+logger = logging.getLogger(__name__)
 
 
 class Rate(BaseModel):
