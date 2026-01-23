@@ -123,5 +123,5 @@ def get_db():
         db.close()
 
 
-def create_tables():
+def create_tables() -> None:
     Base.metadata.create_all(bind=engine)

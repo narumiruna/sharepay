@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import UTC
 from datetime import datetime
 from functools import cache
 
@@ -21,7 +22,7 @@ class Rate(BaseModel):
     @classmethod
     def convert_int(cls, v: datetime | int) -> datetime:
         if isinstance(v, int):
-            return datetime.fromtimestamp(v // 1000)
+            return datetime.fromtimestamp(v // 1000, tz=UTC)
 
         return v
 

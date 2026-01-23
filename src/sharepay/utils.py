@@ -1,13 +1,14 @@
 import io
 import json
+from pathlib import Path
 
 import httpx
 import pandas as pd
 
 
-def save_json(obj, f) -> None:
-    with open(f, "w") as f:
-        json.dump(obj, f, indent=4, ensure_ascii=False)
+def save_json(obj: object, f: str) -> None:
+    with Path(f).open("w") as fp:
+        json.dump(obj, fp, indent=4, ensure_ascii=False)
 
 
 def read_google_sheet(url: str) -> pd.DataFrame:

@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 
 
-def main():
+def main() -> None:
     print("🚀 啟動 SharePay Web 應用程式...")
 
     # 確保在項目根目錄

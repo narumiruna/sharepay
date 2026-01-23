@@ -63,28 +63,28 @@ def client(test_db):
         yield test_client
 
 
-def test_home_page(client):
+def test_home_page(client) -> None:
     """測試首頁"""
     response = client.get("/")
     assert response.status_code == 200
     assert "旅行支出分帳系統" in response.text
 
 
-def test_register_page(client):
+def test_register_page(client) -> None:
     """測試註冊頁面"""
     response = client.get("/register")
     assert response.status_code == 200
     assert "註冊新帳號" in response.text
 
 
-def test_login_page(client):
+def test_login_page(client) -> None:
     """測試登入頁面"""
     response = client.get("/login")
     assert response.status_code == 200
     assert "登入" in response.text
 
 
-def test_user_registration(client):
+def test_user_registration(client) -> None:
     """測試用戶註冊"""
     user_data = {"username": "testuser", "email": "test@example.com", "password": "testpass123"}
     response = client.post("/api/register", json=user_data)
@@ -92,7 +92,7 @@ def test_user_registration(client):
     assert "註冊成功" in response.json()["message"]
 
 
-def test_user_login(client):
+def test_user_login(client) -> None:
     """測試用戶登入"""
     # 先註冊一個用戶
     user_data = {"username": "logintest", "email": "logintest@example.com", "password": "testpass123"}
@@ -106,7 +106,7 @@ def test_user_login(client):
     assert response.json()["token_type"] == "bearer"
 
 
-def test_duplicate_registration(client):
+def test_duplicate_registration(client) -> None:
     """測試重複註冊"""
     user_data = {"username": "duplicate", "email": "duplicate@example.com", "password": "testpass123"}
     # 第一次註冊
@@ -119,7 +119,7 @@ def test_duplicate_registration(client):
     assert "用戶名已存在" in response2.json()["detail"]
 
 
-def test_invalid_login(client):
+def test_invalid_login(client) -> None:
     """測試無效登入"""
     login_data = {"username": "nonexistent", "password": "wrongpass"}
     response = client.post("/api/login", json=login_data)

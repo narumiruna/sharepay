@@ -203,8 +203,7 @@ def get_current_user_optional(request: Request, db: Session = Depends(get_db)) -
             return None
 
         # 獲取用戶
-        user = db.query(User).filter(User.username == username).first()
-        return user
+        return db.query(User).filter(User.username == username).first()
 
     except (JWTError, Exception):
         return None
