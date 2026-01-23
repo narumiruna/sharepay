@@ -99,9 +99,9 @@ uv publish
 2. **Google Sheets integration**: Import expense data directly from spreadsheets
 3. **Alias support**: Map different names to the same person
 4. **Settlement optimization**: Minimize number of transactions needed
-6. **Web Interface**: FastAPI-based web application with responsive UI
-7. **User Management**: Registration, authentication, and trip collaboration
-8. **Mixed Member Types**: Support for both registered users and guest members
+5. **Web Interface**: FastAPI-based web application with responsive UI
+6. **User Management**: Registration, authentication, and trip collaboration
+7. **Mixed Member Types**: Support for both registered users and guest members
 
 ### Data Flow
 
