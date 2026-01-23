@@ -13,22 +13,22 @@
                 <form id="registerForm" autocomplete="on">
                     <div class="mb-3">
                         <label for="username" class="form-label">用戶名</label>
-                        <input type="text" class="form-control" id="username" name="username" 
+                        <input type="text" class="form-control" id="username" name="username"
                                autocomplete="username" required>
                     </div>
                     <div class="mb-3">
                         <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="email" name="email" 
+                        <input type="email" class="form-control" id="email" name="email"
                                autocomplete="email" required>
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">密碼</label>
-                        <input type="password" class="form-control" id="password" name="password" 
+                        <input type="password" class="form-control" id="password" name="password"
                                autocomplete="new-password" required>
                     </div>
                     <div class="mb-3">
                         <label for="confirmPassword" class="form-label">確認密碼</label>
-                        <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" 
+                        <input type="password" class="form-control" id="confirmPassword" name="confirmPassword"
                                autocomplete="new-password" data-1p-ignore="true" required>
                     </div>
                     <button type="submit" class="btn btn-primary w-100">註冊</button>
@@ -46,16 +46,16 @@
 <script>
 document.getElementById('registerForm').addEventListener('submit', async function(e) {
     e.preventDefault();
-    
+
     const formData = new FormData(e.target);
     const password = formData.get('password');
     const confirmPassword = formData.get('confirmPassword');
-    
+
     if (password !== confirmPassword) {
         alert('密碼不匹配');
         return;
     }
-    
+
     try {
         const response = await fetch('/api/register', {
             method: 'POST',
@@ -68,7 +68,7 @@ document.getElementById('registerForm').addEventListener('submit', async functio
                 password: password
             })
         });
-        
+
         if (response.ok) {
             alert('註冊成功！請登入');
             window.location.href = '/login';

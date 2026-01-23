@@ -78,13 +78,13 @@ async function loadDashboard() {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
         });
-        
+
         if (response.ok) {
             const data = await response.json();
-            
+
             // 更新歡迎訊息
             document.getElementById('welcome-message').textContent = `歡迎回來，${data.user.username}！`;
-            
+
             // 更新旅行列表
             const tripsContainer = document.getElementById('trips-container');
             if (data.trips.length > 0) {
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', loadDashboard);
 async function createTrip() {
     const form = document.getElementById('createTripForm');
     const formData = new FormData(form);
-    
+
     try {
         const response = await fetch('/api/trips', {
             method: 'POST',
@@ -151,7 +151,7 @@ async function createTrip() {
                 currency: formData.get('currency')
             })
         });
-        
+
         if (response.ok) {
             const data = await response.json();
             alert('旅行創建成功！');

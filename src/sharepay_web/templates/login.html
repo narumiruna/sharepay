@@ -13,12 +13,12 @@
                 <form id="loginForm" autocomplete="on">
                     <div class="mb-3">
                         <label for="username" class="form-label">用戶名</label>
-                        <input type="text" class="form-control" id="username" name="username" 
+                        <input type="text" class="form-control" id="username" name="username"
                                autocomplete="username" required>
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">密碼</label>
-                        <input type="password" class="form-control" id="password" name="password" 
+                        <input type="password" class="form-control" id="password" name="password"
                                autocomplete="current-password" required>
                     </div>
                     <button type="submit" class="btn btn-primary w-100">登入</button>
@@ -36,9 +36,9 @@
 <script>
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
     e.preventDefault();
-    
+
     const formData = new FormData(e.target);
-    
+
     try {
         const response = await fetch('/api/login', {
             method: 'POST',
@@ -50,7 +50,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
                 password: formData.get('password')
             })
         });
-        
+
         if (response.ok) {
             const data = await response.json();
             localStorage.setItem('token', data.access_token);
