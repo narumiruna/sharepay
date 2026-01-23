@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC
 from datetime import datetime
 
 import dateutil.parser
@@ -27,9 +28,10 @@ class Payment(BaseModel):
     @classmethod
     def parse_time(cls, v: datetime | str) -> datetime:
         if isinstance(v, str):
-            return dateutil.parser.parse(v)
+            parsed = dateutil.parser.parse(v)
+            return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
 
-        return v
+        return v if v.tzinfo else v.replace(tzinfo=UTC)
 
     def debts(self) -> list[Debt]:
         debts = []
