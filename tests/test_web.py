@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-# 添加項目根目錄到Python路徑
+# Add the project root to the Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
@@ -20,72 +20,72 @@ from sharepay_web.database import Base  # noqa: E402
 from sharepay_web.database import get_db  # noqa: E402
 from sharepay_web.main import app  # noqa: E402
 
-# 使用測試資料庫
+# Use a test database
 TEST_DATABASE_URL = "sqlite:///./test_travel_expenses.db"
 
 
 @pytest.fixture(scope="function")
 def test_db():
-    """為每個測試創建獨立的資料庫"""
-    # 創建測試引擎
+    """Create an isolated database for each test."""
+    # Create the test engine
     engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
-    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    testing_session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-    # 創建所有表
+    # Create all tables
     Base.metadata.create_all(bind=engine)
 
     def override_get_db():
         try:
-            db = TestingSessionLocal()
+            db = testing_session_local()
             yield db
         finally:
             db.close()
 
-    # 覆蓋依賴
+    # Override dependency
     app.dependency_overrides[get_db] = override_get_db
 
-    yield TestingSessionLocal
+    yield testing_session_local
 
-    # 測試結束後清理
+    # Cleanup after the test
     Base.metadata.drop_all(bind=engine)
     engine.dispose()
     app.dependency_overrides.clear()
 
-    # 刪除測試資料庫文件
+    # Remove the test database file
     if os.path.exists("test_travel_expenses.db"):
         os.remove("test_travel_expenses.db")
 
 
 @pytest.fixture(scope="function")
 def client(test_db):
-    """測試客戶端"""
+    """Test client."""
     with TestClient(app) as test_client:
         yield test_client
 
 
 def test_home_page(client) -> None:
-    """測試首頁"""
+    """Test the home page."""
     response = client.get("/")
     assert response.status_code == 200
     assert "旅行支出分帳系統" in response.text
 
 
 def test_register_page(client) -> None:
-    """測試註冊頁面"""
+    """Test the registration page."""
     response = client.get("/register")
     assert response.status_code == 200
     assert "註冊新帳號" in response.text
 
 
 def test_login_page(client) -> None:
-    """測試登入頁面"""
+    """Test the login page."""
     response = client.get("/login")
     assert response.status_code == 200
     assert "登入" in response.text
 
 
 def test_user_registration(client) -> None:
-    """測試用戶註冊"""
+    """Test user registration."""
     user_data = {"username": "testuser", "email": "test@example.com", "password": "testpass123"}
     response = client.post("/api/register", json=user_data)
     assert response.status_code == 200
@@ -93,12 +93,12 @@ def test_user_registration(client) -> None:
 
 
 def test_user_login(client) -> None:
-    """測試用戶登入"""
-    # 先註冊一個用戶
+    """Test user login."""
+    # Register a user first
     user_data = {"username": "logintest", "email": "logintest@example.com", "password": "testpass123"}
     client.post("/api/register", json=user_data)
 
-    # 測試登入
+    # Test login
     login_data = {"username": "logintest", "password": "testpass123"}
     response = client.post("/api/login", json=login_data)
     assert response.status_code == 200
@@ -107,20 +107,20 @@ def test_user_login(client) -> None:
 
 
 def test_duplicate_registration(client) -> None:
-    """測試重複註冊"""
+    """Test duplicate registration."""
     user_data = {"username": "duplicate", "email": "duplicate@example.com", "password": "testpass123"}
-    # 第一次註冊
+    # First registration
     response1 = client.post("/api/register", json=user_data)
     assert response1.status_code == 200
 
-    # 第二次註冊相同用戶名
+    # Second registration with the same username
     response2 = client.post("/api/register", json=user_data)
     assert response2.status_code == 400
     assert "用戶名已存在" in response2.json()["detail"]
 
 
 def test_invalid_login(client) -> None:
-    """測試無效登入"""
+    """Test invalid login."""
     login_data = {"username": "nonexistent", "password": "wrongpass"}
     response = client.post("/api/login", json=login_data)
     assert response.status_code == 401

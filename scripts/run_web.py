@@ -9,25 +9,37 @@ import subprocess
 from pathlib import Path
 
 
+class UvNotFoundError(FileNotFoundError):
+    def __init__(self) -> None:
+        super().__init__("uv not found")
+
+
+def ensure_uv_available() -> None:
+    try:
+        result = subprocess.run(["uv", "--version"], capture_output=True, text=True)
+    except FileNotFoundError as exc:
+        raise UvNotFoundError from exc
+    if result.returncode != 0:
+        raise UvNotFoundError
+
+
 def main() -> None:
     print("🚀 啟動 SharePay Web 應用程式...")
 
-    # 確保在項目根目錄
+    # Ensure we are in the project root
     project_root = Path(__file__).parent.parent
     os.chdir(project_root)
 
-    # 檢查 uv 是否可用
+    # Check whether uv is available
     try:
-        result = subprocess.run(["uv", "--version"], capture_output=True, text=True)
-        if result.returncode != 0:
-            raise FileNotFoundError("uv not found")
+        ensure_uv_available()
         print("✅ uv 可用")
-    except FileNotFoundError:
-        print("❌ 未找到 uv，請先安裝 uv")
+    except UvNotFoundError:
+        print("❌ 未找到 uv, 請先安裝 uv")
         print("安裝方法: curl -LsSf https://astral.sh/uv/install.sh | sh")
         return
 
-    # 安裝依賴
+    # Install dependencies
     print("📦 安裝依賴...")
     result = subprocess.run(["uv", "sync"], capture_output=True, text=True)
     if result.returncode != 0:
@@ -36,12 +48,12 @@ def main() -> None:
 
     print("✅ 依賴安裝完成")
 
-    # 啟動服務器
+    # Start the server
     print("🌐 啟動服務器...")
     print("訪問 http://localhost:8000 查看網站")
     print("按 Ctrl+C 停止服務器")
 
-    # 使用 uv 運行 uvicorn
+    # Run uvicorn via uv
     subprocess.run(
         [
             "uv",

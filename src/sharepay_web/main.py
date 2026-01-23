@@ -1,5 +1,7 @@
 import os
+from datetime import UTC
 from datetime import timedelta
+from typing import Any
 
 from fastapi import Depends
 from fastapi import FastAPI
@@ -14,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from sharepay.currency import Currency
 
-# 導入SharePay核心模塊
+# Import SharePay core module
 from sharepay.sharepay import SharePay
 from sharepay_web.auth import ACCESS_TOKEN_EXPIRE_MINUTES
 from sharepay_web.auth import authenticate_user
@@ -30,7 +32,7 @@ from sharepay_web.database import TripMember
 from sharepay_web.database import User
 from sharepay_web.database import create_tables
 
-# 導入應用模塊
+# Import app modules
 from sharepay_web.database import get_db
 from sharepay_web.schemas import PaymentCreate
 from sharepay_web.schemas import SettlementTransaction
@@ -41,34 +43,34 @@ from sharepay_web.schemas import UserLogin
 
 app = FastAPI(title="旅行支出分帳系統")
 
-# 靜態文件和模板
+# Static files and templates
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 templates_dir = os.path.join(os.path.dirname(__file__), "templates")
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 templates = Jinja2Templates(directory=templates_dir)
 
-# 創建資料庫表
+# Create database tables
 create_tables()
 
 
 @app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
+async def home(request: Request) -> Response:
     return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.get("/register", response_class=HTMLResponse)
-async def register_page(request: Request):
+async def register_page(request: Request) -> Response:
     return templates.TemplateResponse("register.html", {"request": request})
 
 
 @app.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request):
+async def login_page(request: Request) -> Response:
     return templates.TemplateResponse("login.html", {"request": request})
 
 
 @app.post("/api/register")
-async def register(user: UserCreate, db: Session = Depends(get_db)):
-    # 檢查用戶是否已存在
+async def register(user: UserCreate, db: Session = Depends(get_db)) -> dict[str, str]:
+    # Check whether the user already exists
     db_user = db.query(User).filter(User.username == user.username).first()
     if db_user:
         raise HTTPException(status_code=400, detail="用戶名已存在")
@@ -77,7 +79,7 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
     if db_user:
         raise HTTPException(status_code=400, detail="Email已存在")
 
-    # 創建新用戶
+    # Create a new user
     hashed_password = get_password_hash(user.password)
     db_user = User(username=user.username, email=user.email, hashed_password=hashed_password)
     db.add(db_user)
@@ -88,7 +90,7 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
 
 
 @app.post("/api/login", response_model=Token)
-async def login(user: UserLogin, response: Response, db: Session = Depends(get_db)):
+async def login(user: UserLogin, response: Response, db: Session = Depends(get_db)) -> dict[str, str]:
     authenticated_user = authenticate_user(db, user.username, user.password)
     if not authenticated_user or isinstance(authenticated_user, bool):
         raise HTTPException(
@@ -102,23 +104,23 @@ async def login(user: UserLogin, response: Response, db: Session = Depends(get_d
     )
     refresh_token = create_refresh_token(data={"sub": str(authenticated_user.username)})
 
-    # 設置 httpOnly cookie
+    # Set the httpOnly cookie
     response.set_cookie(
         key="access_token",
         value=access_token,
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # 7 天
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # 7 days
         httponly=True,
-        secure=False,  # 開發環境設為 False，生產環境應該設為 True
+        secure=False,  # False for development, True for production
         samesite="lax",
     )
 
-    # 設置 refresh token cookie
+    # Set the refresh token cookie
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
-        max_age=30 * 24 * 60 * 60,  # 30 天
+        max_age=30 * 24 * 60 * 60,  # 30 days
         httponly=True,
-        secure=False,  # 開發環境設為 False，生產環境應該設為 True
+        secure=False,  # False for development, True for production
         samesite="lax",
     )
 
@@ -126,7 +128,7 @@ async def login(user: UserLogin, response: Response, db: Session = Depends(get_d
 
 
 @app.post("/api/refresh", response_model=Token)
-async def refresh_access_token(request: Request, response: Response, db: Session = Depends(get_db)):
+async def refresh_access_token(request: Request, response: Response, db: Session = Depends(get_db)) -> dict[str, str]:
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
         raise HTTPException(
@@ -151,11 +153,11 @@ async def refresh_access_token(request: Request, response: Response, db: Session
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # 創建新的 access token
+    # Create a new access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(data={"sub": user.username}, expires_delta=access_token_expires)
 
-    # 更新 access token cookie
+    # Update the access token cookie
     response.set_cookie(
         key="access_token",
         value=access_token,
@@ -169,8 +171,8 @@ async def refresh_access_token(request: Request, response: Response, db: Session
 
 
 @app.post("/api/logout")
-async def logout(response: Response):
-    # 清除 cookies
+async def logout(response: Response) -> dict[str, str]:
+    # Clear cookies
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token")
     return {"message": "登出成功"}
@@ -184,10 +186,10 @@ def get_current_user_optional(request: Request, db: Session = Depends(get_db)) -
         from sharepay_web.auth import ALGORITHM
         from sharepay_web.auth import SECRET_KEY
 
-        # 嘗試從 cookie 獲取 token
+        # Try to get the token from cookies
         token = request.cookies.get("access_token")
 
-        # 如果 cookie 中沒有，嘗試從 Authorization header 獲取
+        # If not in cookies, try the Authorization header
         if not token:
             auth_header = request.headers.get("Authorization")
             if auth_header and auth_header.startswith("Bearer "):
@@ -196,21 +198,21 @@ def get_current_user_optional(request: Request, db: Session = Depends(get_db)) -
         if not token:
             return None
 
-        # 驗證 token
+        # Validate token
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             return None
 
-        # 獲取用戶
+        # Fetch user
         return db.query(User).filter(User.username == username).first()
 
-    except (JWTError, Exception):
+    except JWTError:
         return None
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request, db: Session = Depends(get_db)):
+async def dashboard(request: Request, db: Session = Depends(get_db)) -> Response:
     current_user = get_current_user_optional(request, db)
     if not current_user:
         return RedirectResponse(url="/login", status_code=302)
@@ -219,11 +221,13 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
 
 
 @app.get("/api/dashboard")
-async def get_dashboard_data(current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
-    # 獲取用戶的旅行
+async def get_dashboard_data(
+    current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)
+) -> dict[str, object]:
+    # Fetch trips created by the user
     user_trips = db.query(Trip).filter(Trip.creator_id == current_user.id).all()
 
-    # 獲取用戶參與的旅行
+    # Fetch trips the user participates in
     member_trips = db.query(Trip).join(TripMember).filter(TripMember.user_id == current_user.id).all()
 
     all_trips = list(set(user_trips + member_trips))
@@ -246,13 +250,13 @@ async def get_dashboard_data(current_user: User = Depends(get_current_active_use
 @app.post("/api/trips")
 async def create_trip(
     trip: TripCreate, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)
-):
+) -> dict[str, object]:
     db_trip = Trip(name=trip.name, description=trip.description, currency=trip.currency, creator_id=current_user.id)
     db.add(db_trip)
     db.commit()
     db.refresh(db_trip)
 
-    # 將創建者加入為成員
+    # Add the creator as a member
     trip_member = TripMember(trip_id=db_trip.id, user_id=current_user.id)
     db.add(trip_member)
     db.commit()
@@ -261,13 +265,13 @@ async def create_trip(
 
 
 @app.get("/trip/{trip_id}", response_class=HTMLResponse)
-async def trip_detail(trip_id: int, request: Request, db: Session = Depends(get_db)):
-    # 檢查 token 認證，如果沒有就重定向到登入頁面
+async def trip_detail(trip_id: int, request: Request, db: Session = Depends(get_db)) -> Response:
+    # Check token auth and redirect to login if missing
     current_user = get_current_user_optional(request, db)
     if not current_user:
         return RedirectResponse(url="/login", status_code=302)
 
-    # 檢查用戶是否有權限查看此旅行
+    # Check user permission to view this trip
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
     if not trip:
         raise HTTPException(status_code=404, detail="旅行不存在")
@@ -279,10 +283,10 @@ async def trip_detail(trip_id: int, request: Request, db: Session = Depends(get_
     if not is_member and (not trip or trip.creator_id != current_user.id):
         raise HTTPException(status_code=403, detail="無權限查看此旅行")
 
-    # 獲取旅行成員（包括註冊用戶和非註冊成員）
+    # Fetch trip members (registered users and guests)
     trip_members = db.query(TripMember).filter(TripMember.trip_id == trip_id).all()
 
-    # 構建成員列表，包含顯示名稱和ID
+    # Build member list with display name and ID
     members = []
     for tm in trip_members:
         member_info = {
@@ -293,20 +297,19 @@ async def trip_detail(trip_id: int, request: Request, db: Session = Depends(get_
         }
         members.append(member_info)
 
-    # 獲取支出記錄
+    # Fetch payments
     payments = db.query(Payment).filter(Payment.trip_id == trip_id).all()
-    payment_list = []
-    for payment in payments:
-        payment_list.append(
-            {
-                "id": payment.id,
-                "amount": payment.amount,
-                "currency": payment.currency,
-                "description": payment.description,
-                "date": payment.date,
-                "payer_username": payment.payer_name,
-            }
-        )
+    payment_list = [
+        {
+            "id": payment.id,
+            "amount": payment.amount,
+            "currency": payment.currency,
+            "description": payment.description,
+            "date": payment.date,
+            "payer_username": payment.payer_name,
+        }
+        for payment in payments
+    ]
 
     return templates.TemplateResponse(
         "trip_detail.html",
@@ -320,8 +323,8 @@ async def add_payment(
     payment: PaymentCreate,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
-):
-    # 檢查用戶是否是旅行成員
+) -> dict[str, str]:
+    # Check whether the user is a trip member
     is_member = (
         db.query(TripMember).filter(TripMember.trip_id == trip_id, TripMember.user_id == current_user.id).first()
     )
@@ -329,8 +332,8 @@ async def add_payment(
     if not is_member:
         raise HTTPException(status_code=403, detail="無權限在此旅行中添加支出")
 
-    # 創建支出記錄
-    # 如果指定了 payer_trip_member_id，使用它；否則找到當前用戶的 TripMember ID
+    # Create payment record
+    # If payer_trip_member_id is provided, use it; otherwise use the current user's TripMember ID
     payer_trip_member_id = (
         payment.payer_trip_member_id
         if hasattr(payment, "payer_trip_member_id") and payment.payer_trip_member_id
@@ -338,7 +341,7 @@ async def add_payment(
     )
 
     if not payer_trip_member_id:
-        # 找到當前用戶在此旅行中的 TripMember ID
+        # Find the current user's TripMember ID in this trip
         current_user_trip_member = (
             db.query(TripMember).filter(TripMember.trip_id == trip_id, TripMember.user_id == current_user.id).first()
         )
@@ -357,7 +360,7 @@ async def add_payment(
     db.commit()
     db.refresh(db_payment)
 
-    # 創建分攤記錄（split_with 現在包含的是 trip_member_id）
+    # Create split records (split_with contains trip_member_id values)
     split_amount = payment.amount / len(payment.split_with)
     for trip_member_id in payment.split_with:
         split = PaymentSplit(payment_id=db_payment.id, trip_member_id=trip_member_id, amount=split_amount)
@@ -370,8 +373,8 @@ async def add_payment(
 @app.get("/api/trips/{trip_id}/settlement")
 async def get_settlement(
     trip_id: int, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)
-):
-    # 檢查權限
+) -> dict[str, list[SettlementTransaction]]:
+    # Check permissions
     is_member = (
         db.query(TripMember).filter(TripMember.trip_id == trip_id, TripMember.user_id == current_user.id).first()
     )
@@ -379,15 +382,15 @@ async def get_settlement(
     if not is_member:
         raise HTTPException(status_code=403, detail="無權限查看此旅行的結算")
 
-    # 獲取旅行資訊
+    # Fetch trip info
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
 
-    # 使用SharePay進行結算計算
+    # Use SharePay to compute settlements
     if not trip:
         raise HTTPException(status_code=404, detail="旅行不存在")
     sharepay = SharePay(name=str(trip.name), currency=Currency(str(trip.currency)))
 
-    # 獲取所有支出並添加到SharePay中
+    # Fetch all payments and add them to SharePay
     payments = db.query(Payment).filter(Payment.trip_id == trip_id).all()
 
     for payment in payments:
@@ -406,7 +409,7 @@ async def get_settlement(
             currency=Currency(str(payment.currency)),
         )
 
-    # 執行結算
+    # Run settlement
     transactions = sharepay.settle_up()
 
     settlement_transactions = [
@@ -423,8 +426,8 @@ async def add_trip_member(
     member_data: dict,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
-):
-    # 檢查用戶是否有權限（必須是旅行創建者或成員）
+) -> dict[str, str]:
+    # Check permission (must be trip creator or member)
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
     if not trip:
         raise HTTPException(status_code=404, detail="旅行不存在")
@@ -440,11 +443,11 @@ async def add_trip_member(
     if not name:
         raise HTTPException(status_code=400, detail="請提供成員姓名")
 
-    # 嘗試查找註冊用戶
+    # Try to find a registered user
     user_to_add = db.query(User).filter(User.username == name).first()
 
     if user_to_add:
-        # 註冊用戶 - 檢查是否已經是成員
+        # Registered user - check if already a member
         existing_member = (
             db.query(TripMember).filter(TripMember.trip_id == trip_id, TripMember.user_id == user_to_add.id).first()
         )
@@ -452,10 +455,10 @@ async def add_trip_member(
         if existing_member:
             raise HTTPException(status_code=400, detail="用戶已經是旅行成員")
 
-        # 添加註冊用戶
+        # Add registered user
         new_member = TripMember(trip_id=trip_id, user_id=user_to_add.id)
     else:
-        # 非註冊用戶 - 檢查是否已經以guest身份存在
+        # Guest user - check if the guest already exists
         existing_guest = (
             db.query(TripMember)
             .filter(TripMember.trip_id == trip_id, TripMember.guest_name == name, TripMember.user_id.is_(None))
@@ -465,26 +468,26 @@ async def add_trip_member(
         if existing_guest:
             raise HTTPException(status_code=400, detail="該名稱的成員已存在")
 
-        # 添加非註冊成員
+        # Add guest member
         new_member = TripMember(trip_id=trip_id, guest_name=name)
 
     db.add(new_member)
     db.commit()
 
     member_type = "註冊用戶" if user_to_add else "非註冊成員"
-    return {"message": f"成員添加成功（{member_type}）", "name": name}
+    return {"message": f"成員添加成功({member_type})", "name": name}
 
 
 @app.get("/api/payments/{payment_id}")
 async def get_payment(
     payment_id: int, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)
-):
-    # 獲取支出記錄
+) -> dict[str, Any]:
+    # Fetch payment record
     payment = db.query(Payment).filter(Payment.id == payment_id).first()
     if not payment:
         raise HTTPException(status_code=404, detail="支出記錄不存在")
 
-    # 檢查用戶權限（必須是旅行成員）
+    # Check permission (must be a trip member)
     is_member = (
         db.query(TripMember)
         .filter(TripMember.trip_id == payment.trip_id, TripMember.user_id == current_user.id)
@@ -495,7 +498,7 @@ async def get_payment(
     if not is_member and (not trip or trip.creator_id != current_user.id):
         raise HTTPException(status_code=403, detail="無權限查看此支出記錄")
 
-    # 獲取分攤記錄
+    # Fetch split records
     splits = db.query(PaymentSplit).filter(PaymentSplit.payment_id == payment_id).all()
     split_member_ids = [split.trip_member_id for split in splits]
 
@@ -516,13 +519,13 @@ async def update_payment(
     payment_data: dict,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
-):
-    # 獲取支出記錄
+) -> dict[str, str]:
+    # Fetch payment record
     payment = db.query(Payment).filter(Payment.id == payment_id).first()
     if not payment:
         raise HTTPException(status_code=404, detail="支出記錄不存在")
 
-    # 檢查用戶權限（必須是旅行成員）
+    # Check permission (must be a trip member)
     is_member = (
         db.query(TripMember)
         .filter(TripMember.trip_id == payment.trip_id, TripMember.user_id == current_user.id)
@@ -533,7 +536,7 @@ async def update_payment(
     if not is_member and (not trip or trip.creator_id != current_user.id):
         raise HTTPException(status_code=403, detail="無權限編輯此支出記錄")
 
-    # 更新支出記錄
+    # Update payment record
     payment.amount = payment_data.get("amount", payment.amount)
     payment.currency = payment_data.get("currency", payment.currency)
     payment.description = payment_data.get("description", payment.description)
@@ -542,12 +545,12 @@ async def update_payment(
     if payment_data.get("date"):
         from datetime import datetime
 
-        payment.date = datetime.strptime(payment_data["date"], "%Y-%m-%d")
+        payment.date = datetime.strptime(payment_data["date"], "%Y-%m-%d").replace(tzinfo=UTC)
 
-    # 刪除舊的分攤記錄
+    # Delete old split records
     db.query(PaymentSplit).filter(PaymentSplit.payment_id == payment_id).delete()
 
-    # 創建新的分攤記錄
+    # Create new split records
     split_with = payment_data.get("split_with", [])
     if split_with:
         split_amount = payment.amount / len(split_with)

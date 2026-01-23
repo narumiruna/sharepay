@@ -17,8 +17,8 @@ from sharepay_web.database import get_db
 
 SECRET_KEY = "your-secret-key-here"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 7 * 24 * 60  # 7 天
-REFRESH_TOKEN_EXPIRE_DAYS = 30  # 30 天
+ACCESS_TOKEN_EXPIRE_MINUTES = 7 * 24 * 60  # 7 days
+REFRESH_TOKEN_EXPIRE_DAYS = 30  # 30 days
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
@@ -64,11 +64,11 @@ def verify_refresh_token(token: str) -> str | None:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         token_type: str = payload.get("type")
-        if username is None or token_type != "refresh":
-            return None
-        return username
     except JWTError:
         return None
+    if username is None or token_type != "refresh":
+        return None
+    return username
 
 
 def get_current_user(
@@ -94,7 +94,7 @@ def get_current_user(
     return user
 
 
-def get_current_active_user(current_user: User = Depends(get_current_user)):
+def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
     if not current_user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user

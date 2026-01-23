@@ -1,3 +1,4 @@
+from datetime import UTC
 from datetime import datetime
 
 from sharepay.rate import Rate
@@ -14,7 +15,7 @@ def test_rate_init() -> None:
     assert r.source == source
     assert r.target == target
     assert r.value == value
-    assert r.time == datetime.fromtimestamp(t // 1000)
+    assert r.time == datetime.fromtimestamp(t // 1000, tz=UTC)
 
 
 def test_query_rate() -> None:

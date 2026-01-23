@@ -1,5 +1,7 @@
+from collections.abc import Generator
 from datetime import UTC
 from datetime import datetime
+from typing import cast
 
 from sqlalchemy import Boolean
 from sqlalchemy import Column
@@ -10,6 +12,7 @@ from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import Session
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
 
@@ -33,7 +36,7 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
-    # 關聯
+    # Relationships
     created_trips = relationship("Trip", back_populates="creator")
     memberships = relationship("TripMember", back_populates="user")
 
@@ -49,7 +52,7 @@ class Trip(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
     is_active = Column(Boolean, default=True)
 
-    # 關聯
+    # Relationships
     creator = relationship("User", back_populates="created_trips")
     members = relationship("TripMember", back_populates="trip")
     payments = relationship("Payment", back_populates="trip")
@@ -60,21 +63,19 @@ class TripMember(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     trip_id = Column(Integer, ForeignKey("trips.id"))
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # 允許為空，支持非註冊成員
-    guest_name = Column(String, nullable=True)  # 非註冊成員的姓名
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # Allow null for unregistered members
+    guest_name = Column(String, nullable=True)  # Name for unregistered members
     joined_at = Column(DateTime, default=lambda: datetime.now(UTC))
     is_active = Column(Boolean, default=True)
 
-    # 關聯
+    # Relationships
     trip = relationship("Trip", back_populates="members")
     user = relationship("User", back_populates="memberships")
 
     @property
-    def display_name(self):
-        """返回顯示名稱：註冊用戶返回 username，非註冊用戶返回 guest_name"""
-        if self.user:
-            return self.user.username
-        return self.guest_name
+    def display_name(self) -> str | None:
+        """Return display name: username for registered users, guest_name for guests."""
+        return cast(str | None, self.user.username if self.user else self.guest_name)
 
 
 class Payment(Base):
@@ -82,21 +83,21 @@ class Payment(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     trip_id = Column(Integer, ForeignKey("trips.id"))
-    payer_trip_member_id = Column(Integer, ForeignKey("trip_members.id"))  # 改為關聯到 TripMember
+    payer_trip_member_id = Column(Integer, ForeignKey("trip_members.id"))  # Link to TripMember
     amount = Column(Float)
     currency = Column(String)
     description = Column(String)
     date = Column(DateTime, default=lambda: datetime.now(UTC))
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
-    # 關聯
+    # Relationships
     trip = relationship("Trip", back_populates="payments")
-    payer_trip_member = relationship("TripMember")  # 付款人可以是註冊或非註冊成員
+    payer_trip_member = relationship("TripMember")  # Payer can be registered or guest
     splits = relationship("PaymentSplit", back_populates="payment")
 
     @property
-    def payer_name(self):
-        """返回付款人名稱"""
+    def payer_name(self) -> str:
+        """Return payer name."""
         if self.payer_trip_member:
             return self.payer_trip_member.display_name
         return "未知"
@@ -107,15 +108,15 @@ class PaymentSplit(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     payment_id = Column(Integer, ForeignKey("payments.id"))
-    trip_member_id = Column(Integer, ForeignKey("trip_members.id"))  # 改為關聯到 TripMember
+    trip_member_id = Column(Integer, ForeignKey("trip_members.id"))  # Link to TripMember
     amount = Column(Float)
 
-    # 關聯
+    # Relationships
     payment = relationship("Payment", back_populates="splits")
     trip_member = relationship("TripMember")
 
 
-def get_db():
+def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
         yield db
