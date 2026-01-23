@@ -48,6 +48,7 @@ def test_db():
 
     # 測試結束後清理
     Base.metadata.drop_all(bind=engine)
+    engine.dispose()
     app.dependency_overrides.clear()
 
     # 刪除測試資料庫文件
@@ -58,7 +59,8 @@ def test_db():
 @pytest.fixture(scope="function")
 def client(test_db):
     """測試客戶端"""
-    return TestClient(app)
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 def test_home_page(client):
