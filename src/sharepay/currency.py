@@ -8,3 +8,6 @@ class Currency(str, Enum):
     TWD = "TWD"
     USD = "USD"
     CAD = "CAD"
+
+    def __str__(self) -> str:
+        return self.value
