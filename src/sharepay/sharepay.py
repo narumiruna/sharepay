@@ -94,6 +94,7 @@ class SharePay(BaseModel):
             recipient.value += amount
 
         for t in transactions:
+            print(t)
             logger.info(t)
 
         return transactions
