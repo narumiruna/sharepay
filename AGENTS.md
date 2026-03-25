@@ -8,9 +8,9 @@ Project metadata and tool configuration are centralized in `pyproject.toml`; aut
 
 ## Build, Test, and Development Commands
 - `uv sync` installs runtime and dev dependencies from `uv.lock`.
-- `make lint` runs Ruff checks (`uv run ruff check`).
-- `make type` runs static type checks (`uv run ty check`).
-- `make test` runs pytest with coverage on `src` (`uv run pytest -v -s --cov=src tests`).
+- `just lint` runs Ruff checks (`uv run ruff check`).
+- `just type` runs static type checks (`uv run ty check`).
+- `just test` runs pytest with coverage on `src` (`uv run pytest -v -s --cov=src tests`).
 - `uv run pytest -k rate tests` is useful for focused test runs during iteration.
 - `uv build --wheel` builds a distributable wheel (also used in publish workflow).
 
