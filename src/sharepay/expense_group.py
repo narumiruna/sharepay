@@ -96,9 +96,7 @@ class ExpenseGroup(BaseModel):
         return transactions
 
     @classmethod
-    def from_df(
-        cls, df: pd.DataFrame, alias: dict | None = None, currency: Currency | None = None
-    ) -> ExpenseGroup:
+    def from_df(cls, df: pd.DataFrame, alias: dict | None = None, currency: Currency | None = None) -> ExpenseGroup:
         project = cls(name="df", alias=alias or {}, currency=currency or DEFAULT_CURRENCY)
         for _, row in df.iterrows():
             if row.isna().any():
