@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_CURRENCY = Currency.TWD
 
 
-class SharePay(BaseModel):
+class ExpenseGroup(BaseModel):
     name: str
     balances: dict[str, Balance] = Field(default_factory=dict)
     currency: Currency = Field(default=DEFAULT_CURRENCY)
@@ -96,7 +96,7 @@ class SharePay(BaseModel):
         return transactions
 
     @classmethod
-    def from_df(cls, df: pd.DataFrame, alias: dict | None = None, currency: Currency | None = None) -> SharePay:
+    def from_df(cls, df: pd.DataFrame, alias: dict | None = None, currency: Currency | None = None) -> ExpenseGroup:
         project = cls(name="df", alias=alias or {}, currency=currency or DEFAULT_CURRENCY)
         for _, row in df.iterrows():
             if row.isna().any():
@@ -112,6 +112,9 @@ class SharePay(BaseModel):
         return project
 
     @classmethod
-    def from_sheet(cls, url: str, alias: dict | None = None, currency: Currency | None = None) -> SharePay:
+    def from_sheet(cls, url: str, alias: dict | None = None, currency: Currency | None = None) -> ExpenseGroup:
         df = read_google_sheet(url)
         return cls.from_df(df, alias=alias or {}, currency=currency or DEFAULT_CURRENCY)
+
+
+SharePay = ExpenseGroup

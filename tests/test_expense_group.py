@@ -1,9 +1,9 @@
 from sharepay.currency import Currency
-from sharepay.sharepay import SharePay
+from sharepay.expense_group import ExpenseGroup
 
 
-def test_sharepay_currency() -> None:
-    s = SharePay(name="test", currency=Currency.TWD)
+def test_expense_group_currency() -> None:
+    s = ExpenseGroup(name="test", currency=Currency.TWD)
     s.add_payment(amount=300, payer="a", members=["a", "b", "c"], currency=Currency.JPY)
     s.settle_up()
 
@@ -14,8 +14,8 @@ def test_sharepay_currency() -> None:
     assert s.balances["b"].value == s.balances["b"].value
 
 
-def test_sharepay_balance() -> None:
-    s = SharePay(name="test")
+def test_expense_group_balance() -> None:
+    s = ExpenseGroup(name="test")
     s.add_payment(amount=300, payer="a", members=["a", "b", "c"], currency=Currency.TWD)
     s.add_payment(amount=200, payer="b", members=["b", "c"], currency=Currency.TWD)
     s.settle_up()
@@ -27,8 +27,8 @@ def test_sharepay_balance() -> None:
     assert sum([m.value for m in s.balances.values()]) == 0
 
 
-def test_sharepay_settle_up() -> None:
-    s = SharePay(name="test")
+def test_expense_group_settle_up() -> None:
+    s = ExpenseGroup(name="test")
     s.add_payment(amount=300, payer="a", members=["a", "b", "c"], currency=Currency.TWD)
     s.add_payment(amount=200, payer="b", members=["b", "c"], currency=Currency.TWD)
     transactions = s.settle_up()
@@ -39,8 +39,8 @@ def test_sharepay_settle_up() -> None:
     assert transactions[0].amount == 200
 
 
-def test_sharepay_alias() -> None:
-    s = SharePay(name="test", alias={"c": "a"})
+def test_expense_group_alias() -> None:
+    s = ExpenseGroup(name="test", alias={"c": "a"})
     s.add_payment(amount=300, payer="a", members=["a", "b", "c"], currency=Currency.TWD)
     s.add_payment(amount=200, payer="b", members=["b", "c"], currency=Currency.TWD)
     transactions = s.settle_up()
