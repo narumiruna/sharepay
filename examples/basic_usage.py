@@ -1,9 +1,9 @@
 from sharepay.currency import Currency
-from sharepay.sharepay import SharePay
+from sharepay.expense_group import ExpenseGroup
 
 
 def main() -> None:
-    p = SharePay(name="Sendai", currency=Currency.JPY, alias={"yoan": "john"})
+    p = ExpenseGroup(name="Sendai", currency=Currency.JPY, alias={"yoan": "john"})
 
     p.add_payment(amount=300, currency=Currency.JPY, payer="narumi", members=["narumi", "dogiko", "ben"])
     p.add_payment(amount=600, currency=Currency.JPY, payer="dogiko", members=["dogiko", "ben", "john"])
