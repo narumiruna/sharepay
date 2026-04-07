@@ -11,6 +11,7 @@ Project metadata and tool configuration are centralized in `pyproject.toml`; aut
 - `just lint` runs Ruff checks (`uv run ruff check`).
 - `just type` runs static type checks (`uv run ty check`).
 - `just test` runs pytest with coverage on `src` (`uv run pytest -v -s --cov=src tests`).
+- `prek run -a` must be executed after every code change before finalizing work.
 - `uv run pytest -k rate tests` is useful for focused test runs during iteration.
 - `uv build --wheel` builds a distributable wheel (also used in publish workflow).
 
@@ -18,7 +19,7 @@ Project metadata and tool configuration are centralized in `pyproject.toml`; aut
 Use Python 3.11+ features and keep code compatible with CI (Python 3.13).
 Follow Ruff defaults plus project rules: max line length `120`, import sorting with single-line imports, and strict lint families enabled in `pyproject.toml`.
 Use `snake_case` for functions/variables/modules, `PascalCase` for classes, and clear domain names matching existing modules.
-Run pre-commit hooks before opening a PR: `uv run prek run -a`.
+Run `prek run -a` after every code change, not only before opening a PR.
 
 ## Testing Guidelines
 Testing uses `pytest` and `pytest-cov`. Name tests `test_*.py` and functions `test_*`.
