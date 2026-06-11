@@ -42,31 +42,31 @@ def _parse_aliases(alias_items: list[str] | None) -> dict[str, str]:
     return aliases
 
 
-def _normalized_balance_value(value: float, epsilon: float = 1e-6) -> float:
-    if abs(value) <= epsilon:
+def _display_balance_value(value: float) -> float:
+    rounded_value = round(value, 2)
+    if rounded_value == 0:
         return 0
-    return value
+    return rounded_value
 
 
-def _balance_style(value: float, epsilon: float = 1e-6) -> str:
-    if value > epsilon:
+def _balance_style(display_value: float) -> str:
+    if display_value > 0:
         return "red"
-    if value < -epsilon:
+    if display_value < 0:
         return "green"
     return "dim"
 
 
-def _balance_status(value: float, epsilon: float = 1e-6) -> Text:
-    if value > epsilon:
+def _balance_status(display_value: float) -> Text:
+    if display_value > 0:
         return Text("owes", style="red")
-    if value < -epsilon:
+    if display_value < 0:
         return Text("receives", style="green")
     return Text("settled", style="dim")
 
 
-def _balance_amount(balance: Balance) -> Text:
-    value = _normalized_balance_value(balance.value)
-    return Text(f"{value:+.2f} {balance.currency}", style=_balance_style(value))
+def _balance_amount(balance: Balance, display_value: float) -> Text:
+    return Text(f"{display_value:+.2f} {balance.currency}", style=_balance_style(display_value))
 
 
 def _transaction_amount(transaction: Transaction) -> Text:
@@ -80,7 +80,8 @@ def _print_balances(console: Console, balances: list[Balance]) -> None:
     table.add_column("Status")
 
     for balance in sorted(balances, key=lambda item: item.owner):
-        table.add_row(Text(balance.owner), _balance_amount(balance), _balance_status(balance.value))
+        display_value = _display_balance_value(balance.value)
+        table.add_row(Text(balance.owner), _balance_amount(balance, display_value), _balance_status(display_value))
 
     console.print(table)
 

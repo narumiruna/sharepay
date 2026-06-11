@@ -48,6 +48,19 @@ def test_settle_csv_file(tmp_path: Path) -> None:
     _assert_settlement(result.stdout, "c", "a", "200.00 TWD")
 
 
+def test_settle_balances_use_display_precision_for_status(tmp_path: Path) -> None:
+    csv_path = _write_payments_csv(
+        tmp_path,
+        'amount,payer,members,currency\n0.008,a,"a,b",TWD\n',
+    )
+
+    result = runner.invoke(app, ["settle", "--file", str(csv_path)])
+
+    assert result.exit_code == 0
+    _assert_balance(result.stdout, "a", "+0.00 TWD", "settled")
+    _assert_balance(result.stdout, "b", "+0.00 TWD", "settled")
+
+
 def test_settle_csv_file_uses_sheet_csv_parsing(tmp_path: Path) -> None:
     csv_path = _write_payments_csv(
         tmp_path,
