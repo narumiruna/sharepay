@@ -1205,6 +1205,7 @@ dependencies = [
     { name = "httpx" },
     { name = "pandas" },
     { name = "pydantic" },
+    { name = "rich" },
     { name = "typer" },
 ]
 
@@ -1234,6 +1235,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "pandas", specifier = ">=3.0.1" },
     { name = "pydantic", specifier = ">=2.12.5" },
+    { name = "rich", specifier = ">=15.0.0" },
     { name = "typer", specifier = ">=0.25.1" },
 ]
 
