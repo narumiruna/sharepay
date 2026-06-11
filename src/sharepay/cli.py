@@ -73,6 +73,16 @@ def _transaction_amount(transaction: Transaction) -> Text:
     return Text(f"{transaction.amount:.2f} {transaction.currency}", style="bold")
 
 
+def _canonical_balances(group: ExpenseGroup) -> list[Balance]:
+    balances: dict[str, Balance] = {}
+    for balance in group.balances.values():
+        owner = group.alias.get(balance.owner, balance.owner).lower().strip()
+        if owner not in balances:
+            balances[owner] = Balance(owner=owner, currency=balance.currency)
+        balances[owner].value += balance.value
+    return list(balances.values())
+
+
 def _print_balances(console: Console, balances: list[Balance]) -> None:
     table = Table(title="Balances", box=box.ROUNDED)
     table.add_column("Member", style="bold")
@@ -150,7 +160,7 @@ def settle(
         msg = f"HTTP request failed: {exc}"
         raise typer.BadParameter(msg) from exc
     console = Console()
-    _print_balances(console, list(group.balances.values()))
+    _print_balances(console, _canonical_balances(group))
     _print_transactions(console, transactions)
 
 

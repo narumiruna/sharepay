@@ -27,6 +27,10 @@ def _assert_balance(output: str, member: str, amount: str, status: str) -> None:
     assert re.search(rf"│ {re.escape(member)}\s+│\s+{re.escape(amount)} │ {re.escape(status)}\s+│", output)
 
 
+def _assert_no_balance(output: str, member: str) -> None:
+    assert not re.search(rf"│ {re.escape(member)}\s+│", output)
+
+
 def _assert_settlement(output: str, sender: str, recipient: str, amount: str) -> None:
     assert "Balances" in output
     assert "Settlement" in output
@@ -133,6 +137,9 @@ def test_settle_alias_option(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert "Balances" in result.stdout
+    _assert_balance(result.stdout, "a", "+0.00 TWD", "settled")
+    _assert_balance(result.stdout, "b", "+0.00 TWD", "settled")
+    _assert_no_balance(result.stdout, "c")
     assert "No transactions needed." in result.stdout
 
 
@@ -145,6 +152,9 @@ def test_settle_alias_target_can_be_new_member(tmp_path: Path) -> None:
     result = runner.invoke(app, ["settle", "--file", str(csv_path), "--alias", "c=a"])
 
     assert result.exit_code == 0
+    _assert_balance(result.stdout, "a", "+50.00 TWD", "owes")
+    _assert_balance(result.stdout, "b", "-50.00 TWD", "receives")
+    _assert_no_balance(result.stdout, "c")
     _assert_settlement(result.stdout, "a", "b", "50.00 TWD")
 
 
