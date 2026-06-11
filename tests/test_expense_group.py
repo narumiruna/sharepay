@@ -64,3 +64,14 @@ def test_expense_group_alias() -> None:
     assert s.balances["a"].value == 0
     assert s.balances["b"].value == 0
     assert s.balances["c"].value == 0
+
+
+def test_expense_group_alias_normalizes_owner_names() -> None:
+    s = ExpenseGroup(name="test", alias={" C ": " A "})
+    s.add_payment(amount=100, payer="b", members=["b", "c"], currency=Currency.TWD)
+    transactions = s.settle_up()
+
+    assert len(transactions) == 1
+    assert transactions[0].sender == "a"
+    assert transactions[0].recipient == "b"
+    assert transactions[0].amount == 50
