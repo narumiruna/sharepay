@@ -129,6 +129,3 @@ class ExpenseGroup(BaseModel):
     def from_sheet(cls, url: str, alias: dict | None = None, currency: Currency | None = None) -> ExpenseGroup:
         df = read_google_sheet(url)
         return cls.from_df(df, alias=alias or {}, currency=currency or DEFAULT_CURRENCY)
-
-
-SharePay = ExpenseGroup
