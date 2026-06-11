@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import httpx
@@ -22,6 +23,20 @@ def _write_payments_csv(tmp_path: Path, content: str) -> Path:
     return csv_path
 
 
+def _assert_balance(output: str, member: str, amount: str, status: str) -> None:
+    assert re.search(rf"│ {re.escape(member)}\s+│\s+{re.escape(amount)} │ {re.escape(status)}\s+│", output)
+
+
+def _assert_no_balance(output: str, member: str) -> None:
+    assert not re.search(rf"│ {re.escape(member)}\s+│", output)
+
+
+def _assert_settlement(output: str, sender: str, recipient: str, amount: str) -> None:
+    assert "Balances" in output
+    assert "Settlement" in output
+    assert re.search(rf"│ {re.escape(sender)}\s+│ {re.escape(recipient)}\s+│\s+{re.escape(amount)} │", output)
+
+
 def test_settle_csv_file(tmp_path: Path) -> None:
     csv_path = _write_payments_csv(
         tmp_path,
@@ -31,7 +46,23 @@ def test_settle_csv_file(tmp_path: Path) -> None:
     result = runner.invoke(app, ["settle", "--file", str(csv_path)])
 
     assert result.exit_code == 0
-    assert "c      -> a          200.00 TWD" in result.stdout
+    _assert_balance(result.stdout, "a", "-200.00 TWD", "receives")
+    _assert_balance(result.stdout, "b", "+0.00 TWD", "settled")
+    _assert_balance(result.stdout, "c", "+200.00 TWD", "owes")
+    _assert_settlement(result.stdout, "c", "a", "200.00 TWD")
+
+
+def test_settle_balances_use_display_precision_for_status(tmp_path: Path) -> None:
+    csv_path = _write_payments_csv(
+        tmp_path,
+        'amount,payer,members,currency\n0.008,a,"a,b",TWD\n',
+    )
+
+    result = runner.invoke(app, ["settle", "--file", str(csv_path)])
+
+    assert result.exit_code == 0
+    _assert_balance(result.stdout, "a", "+0.00 TWD", "settled")
+    _assert_balance(result.stdout, "b", "+0.00 TWD", "settled")
 
 
 def test_settle_csv_file_uses_sheet_csv_parsing(tmp_path: Path) -> None:
@@ -43,7 +74,7 @@ def test_settle_csv_file_uses_sheet_csv_parsing(tmp_path: Path) -> None:
     result = runner.invoke(app, ["settle", "--file", str(csv_path)])
 
     assert result.exit_code == 0
-    assert "b      -> a          600.00 TWD" in result.stdout
+    _assert_settlement(result.stdout, "b", "a", "600.00 TWD")
 
 
 def test_settle_google_sheet(monkeypatch) -> None:
@@ -60,7 +91,7 @@ def test_settle_google_sheet(monkeypatch) -> None:
 
     assert result.exit_code == 0
     assert calls == {"url": "https://example.test/sheet.csv", "follow_redirects": True, "timeout": 10}
-    assert "c      -> a          200.00 TWD" in result.stdout
+    _assert_settlement(result.stdout, "c", "a", "200.00 TWD")
 
 
 def test_settle_google_sheet_reports_http_errors(monkeypatch) -> None:
@@ -105,6 +136,10 @@ def test_settle_alias_option(tmp_path: Path) -> None:
     result = runner.invoke(app, ["settle", "--file", str(csv_path), "--alias", "c=a"])
 
     assert result.exit_code == 0
+    assert "Balances" in result.stdout
+    _assert_balance(result.stdout, "a", "+0.00 TWD", "settled")
+    _assert_balance(result.stdout, "b", "+0.00 TWD", "settled")
+    _assert_no_balance(result.stdout, "c")
     assert "No transactions needed." in result.stdout
 
 
@@ -117,7 +152,10 @@ def test_settle_alias_target_can_be_new_member(tmp_path: Path) -> None:
     result = runner.invoke(app, ["settle", "--file", str(csv_path), "--alias", "c=a"])
 
     assert result.exit_code == 0
-    assert "a      -> b           50.00 TWD" in result.stdout
+    _assert_balance(result.stdout, "a", "+50.00 TWD", "owes")
+    _assert_balance(result.stdout, "b", "-50.00 TWD", "receives")
+    _assert_no_balance(result.stdout, "c")
+    _assert_settlement(result.stdout, "a", "b", "50.00 TWD")
 
 
 def test_settle_rejects_invalid_alias(tmp_path: Path) -> None:
@@ -153,4 +191,4 @@ def test_settle_currency_option_is_case_insensitive(tmp_path: Path) -> None:
     result = runner.invoke(app, ["settle", "--file", str(csv_path), "--currency", "usd"])
 
     assert result.exit_code == 0
-    assert "b      -> a           50.00 USD" in result.stdout
+    _assert_settlement(result.stdout, "b", "a", "50.00 USD")

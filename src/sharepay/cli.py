@@ -5,10 +5,16 @@ from typing import Annotated
 
 import httpx
 import typer
+from rich import box
+from rich.console import Console
+from rich.table import Table
+from rich.text import Text
 
+from .balance import Balance
 from .currency import Currency
 from .expense_group import DEFAULT_CURRENCY
 from .expense_group import ExpenseGroup
+from .transaction import Transaction
 from .utils import read_payment_csv
 
 app = typer.Typer(help="Calculate sharepay settlement transactions.")
@@ -34,6 +40,76 @@ def _parse_aliases(alias_items: list[str] | None) -> dict[str, str]:
             raise typer.BadParameter(msg)
         aliases[source] = target
     return aliases
+
+
+def _display_balance_value(value: float) -> float:
+    rounded_value = round(value, 2)
+    if rounded_value == 0:
+        return 0
+    return rounded_value
+
+
+def _balance_style(display_value: float) -> str:
+    if display_value > 0:
+        return "red"
+    if display_value < 0:
+        return "green"
+    return "dim"
+
+
+def _balance_status(display_value: float) -> Text:
+    if display_value > 0:
+        return Text("owes", style="red")
+    if display_value < 0:
+        return Text("receives", style="green")
+    return Text("settled", style="dim")
+
+
+def _balance_amount(balance: Balance, display_value: float) -> Text:
+    return Text(f"{display_value:+.2f} {balance.currency}", style=_balance_style(display_value))
+
+
+def _transaction_amount(transaction: Transaction) -> Text:
+    return Text(f"{transaction.amount:.2f} {transaction.currency}", style="bold")
+
+
+def _canonical_balances(group: ExpenseGroup) -> list[Balance]:
+    balances: dict[str, Balance] = {}
+    for balance in group.balances.values():
+        owner = group.alias.get(balance.owner, balance.owner).lower().strip()
+        if owner not in balances:
+            balances[owner] = Balance(owner=owner, currency=balance.currency)
+        balances[owner].value += balance.value
+    return list(balances.values())
+
+
+def _print_balances(console: Console, balances: list[Balance]) -> None:
+    table = Table(title="Balances", box=box.ROUNDED)
+    table.add_column("Member", style="bold")
+    table.add_column("Balance", justify="right")
+    table.add_column("Status")
+
+    for balance in sorted(balances, key=lambda item: item.owner):
+        display_value = _display_balance_value(balance.value)
+        table.add_row(Text(balance.owner), _balance_amount(balance, display_value), _balance_status(display_value))
+
+    console.print(table)
+
+
+def _print_transactions(console: Console, transactions: list[Transaction]) -> None:
+    if not transactions:
+        console.print("[green]No transactions needed.[/green]")
+        return
+
+    table = Table(title="Settlement", box=box.ROUNDED)
+    table.add_column("From", style="bold red")
+    table.add_column("To", style="bold green")
+    table.add_column("Amount", justify="right")
+
+    for transaction in transactions:
+        table.add_row(Text(transaction.sender), Text(transaction.recipient), _transaction_amount(transaction))
+
+    console.print(table)
 
 
 @app.command()
@@ -83,12 +159,9 @@ def settle(
     except httpx.HTTPError as exc:
         msg = f"HTTP request failed: {exc}"
         raise typer.BadParameter(msg) from exc
-    if not transactions:
-        typer.echo("No transactions needed.")
-        return
-
-    for transaction in transactions:
-        typer.echo(str(transaction))
+    console = Console()
+    _print_balances(console, _canonical_balances(group))
+    _print_transactions(console, transactions)
 
 
 if __name__ == "__main__":
