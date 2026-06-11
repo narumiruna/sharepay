@@ -27,3 +27,43 @@ def test_read_google_sheet_uses_timeout_and_checks_status(monkeypatch) -> None:
     assert calls == {"url": "https://example.test/sheet.csv", "follow_redirects": True, "timeout": 10}
     assert response.raise_for_status_called
     assert df.to_dict("records") == [{"payer": "a", "members": "a,b", "amount": 100.0, "currency": "TWD"}]
+
+
+def test_read_google_sheet_converts_share_url_to_csv_export(monkeypatch) -> None:
+    response = _FakeResponse()
+    calls = {}
+
+    def fake_get(url, **kwargs):
+        calls["url"] = url
+        calls.update(kwargs)
+        return response
+
+    monkeypatch.setattr(utils.httpx, "get", fake_get)
+
+    utils.read_google_sheet("https://docs.google.com/spreadsheets/d/sheet-id/edit?usp=sharing")
+
+    assert calls == {
+        "url": "https://docs.google.com/spreadsheets/d/sheet-id/export?format=csv",
+        "follow_redirects": True,
+        "timeout": 10,
+    }
+
+
+def test_read_google_sheet_preserves_gid_from_share_url(monkeypatch) -> None:
+    response = _FakeResponse()
+    calls = {}
+
+    def fake_get(url, **kwargs):
+        calls["url"] = url
+        calls.update(kwargs)
+        return response
+
+    monkeypatch.setattr(utils.httpx, "get", fake_get)
+
+    utils.read_google_sheet("https://docs.google.com/spreadsheets/d/sheet-id/edit?usp=sharing#gid=123")
+
+    assert calls == {
+        "url": "https://docs.google.com/spreadsheets/d/sheet-id/export?format=csv&gid=123",
+        "follow_redirects": True,
+        "timeout": 10,
+    }

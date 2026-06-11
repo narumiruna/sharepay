@@ -52,7 +52,7 @@ def settle(
     ] = None,
     sheet: Annotated[
         str | None,
-        typer.Option("--sheet", "-s", help="Google Sheet CSV/export URL with payment rows."),
+        typer.Option("--sheet", "-s", help="Google Sheet sharing, CSV, or export URL with payment rows."),
     ] = None,
     currency: Annotated[
         Currency,
