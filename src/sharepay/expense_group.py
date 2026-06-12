@@ -88,7 +88,7 @@ class ExpenseGroup(BaseModel):
     def settle_up(
         self,
         epsilon: float = 1e-6,
-        method: SettlementMethod | str = SettlementMethod.RELAY,
+        method: SettlementMethod | str = SettlementMethod.MAX_DEBTOR,
     ) -> list[Transaction]:
         self.reset_balance()
         self.calculate_balance()

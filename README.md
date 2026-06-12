@@ -8,7 +8,7 @@ live exchange rates, and print the transactions needed to settle up.
 
 - Split group expenses equally across payment members.
 - Calculate who owes whom and produce settlement transactions.
-- Choose default relay settlement or max-debtor settlement, where the largest net debtor coordinates remittances.
+- Use max-debtor settlement by default, where the largest net debtor coordinates remittances.
 - Import payments from CSV files or public Google Sheets.
 - Convert multi-currency expenses into one settlement currency.
 - Merge duplicate people with aliases such as `johnny=john`.
@@ -73,7 +73,7 @@ sharepay settle --file expenses.csv
 sharepay settle \
   --sheet "https://docs.google.com/spreadsheets/d/<sheet-id>/edit#gid=0"
 sharepay settle --file expenses.csv --currency USD
-sharepay settle --file expenses.csv --settlement-method max-debtor
+sharepay settle --file expenses.csv --settlement-method relay
 sharepay settle --file expenses.csv --alias "johnny=john" --alias "jon=john"
 ```
 
@@ -82,9 +82,9 @@ Supported settlement currencies are `EUR`, `GBP`, `JPY`, `TWD`, `USD`, and `CAD`
 
 ## Settlement methods
 
-`sharepay settle` uses `--settlement-method relay` by default, preserving the original settlement flow where one member
-may receive money and forward part of it to another member. Use `--settlement-method max-debtor` when the member with the
-largest net debt should send money to every net creditor first; other debtors then reimburse that member.
+`sharepay settle` uses `--settlement-method max-debtor` by default, where the member with the largest net debt sends
+money to every net creditor first; other debtors then reimburse that member. Use `--settlement-method relay` for the
+original settlement flow where one member may receive money and forward part of it to another member.
 
 ## Python API example
 
@@ -110,7 +110,7 @@ for transaction in group.settle_up():
     print(transaction)
 ```
 
-Use `group.settle_up(method="max-debtor")` to choose the max-debtor method from Python.
+Use `group.settle_up(method="relay")` to choose the relay method from Python.
 
 Output:
 
@@ -124,8 +124,8 @@ cara   -> alice      200.00 TWD
 2. The payer is credited for the shares paid on behalf of others.
 3. Expenses in other currencies are converted into the settlement currency with live exchange rates.
 4. Optional aliases canonicalize repeated names before balances are settled.
-5. `settle_up()` returns the transactions needed to bring balances back to zero, using relay settlement by default or
-   max-debtor settlement when selected.
+5. `settle_up()` returns the transactions needed to bring balances back to zero, using max-debtor settlement by default
+   or relay settlement when selected.
 
 ## Development
 
