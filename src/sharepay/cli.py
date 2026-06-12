@@ -14,6 +14,7 @@ from .balance import Balance
 from .currency import Currency
 from .expense_group import DEFAULT_CURRENCY
 from .expense_group import ExpenseGroup
+from .expense_group import SettlementMethod
 from .transaction import Transaction
 from .utils import read_payment_csv
 
@@ -138,6 +139,10 @@ def settle(
         list[str] | None,
         typer.Option("--alias", "-a", help="Alias in FROM=TO format. Can be provided multiple times."),
     ] = None,
+    settlement_method: Annotated[
+        SettlementMethod,
+        typer.Option("--settlement-method", case_sensitive=False, help="Settlement method."),
+    ] = SettlementMethod.RELAY,
 ) -> None:
     """Print the transactions needed to settle payments from a CSV file or Google Sheet."""
     if (file is None) == (sheet is None):
@@ -153,7 +158,7 @@ def settle(
         else:
             raise AssertionError("unreachable")
 
-        transactions = group.settle_up()
+        transactions = group.settle_up(method=settlement_method)
     except ValueError as exc:
         raise typer.BadParameter(str(exc)) from exc
     except httpx.HTTPError as exc:

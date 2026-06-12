@@ -1,5 +1,14 @@
 from sharepay.currency import Currency
 from sharepay.expense_group import ExpenseGroup
+from sharepay.expense_group import SettlementMethod
+
+
+def _apply_transactions(group: ExpenseGroup, transactions):
+    values = {owner: balance.value for owner, balance in group.balances.items()}
+    for transaction in transactions:
+        values[transaction.sender] = values.get(transaction.sender, 0) - transaction.amount
+        values[transaction.recipient] = values.get(transaction.recipient, 0) + transaction.amount
+    return values
 
 
 def test_expense_group_currency() -> None:
@@ -51,6 +60,32 @@ def test_expense_group_settle_up_keeps_each_sender_to_one_transfer() -> None:
         ("c", "a", 150),
         ("a", "b", 50),
     ]
+
+
+def test_expense_group_settle_up_max_debtor_pays_each_creditor() -> None:
+    s = ExpenseGroup(name="test")
+    s.add_payment(amount=200, payer="a", members=["a", "c"], currency=Currency.TWD)
+    s.add_payment(amount=100, payer="b", members=["b", "c"], currency=Currency.TWD)
+    transactions = s.settle_up(method="max-debtor")
+
+    assert [(transaction.sender, transaction.recipient, transaction.amount) for transaction in transactions] == [
+        ("c", "a", 100),
+        ("c", "b", 50),
+    ]
+
+
+def test_expense_group_settle_up_max_debtor_collects_from_other_debtors() -> None:
+    s = ExpenseGroup(name="test")
+    s.add_payment(amount=200, payer="a", members=["a", "c"], currency=Currency.TWD)
+    s.add_payment(amount=100, payer="b", members=["b", "d"], currency=Currency.TWD)
+    transactions = s.settle_up(method=SettlementMethod.MAX_DEBTOR)
+
+    assert [(transaction.sender, transaction.recipient, transaction.amount) for transaction in transactions] == [
+        ("c", "a", 100),
+        ("c", "b", 50),
+        ("d", "c", 50),
+    ]
+    assert all(abs(value) < 1e-6 for value in _apply_transactions(s, transactions).values())
 
 
 def test_expense_group_alias() -> None:
