@@ -48,11 +48,23 @@ def test_expense_group_settle_up() -> None:
     assert transactions[0].amount == 200
 
 
-def test_expense_group_settle_up_keeps_each_sender_to_one_transfer() -> None:
+def test_expense_group_settle_up_defaults_to_max_debtor() -> None:
     s = ExpenseGroup(name="test")
     s.add_payment(amount=200, payer="a", members=["a", "c"], currency=Currency.TWD)
     s.add_payment(amount=100, payer="b", members=["b", "c"], currency=Currency.TWD)
     transactions = s.settle_up()
+
+    assert [(transaction.sender, transaction.recipient, transaction.amount) for transaction in transactions] == [
+        ("c", "a", 100),
+        ("c", "b", 50),
+    ]
+
+
+def test_expense_group_settle_up_relay_keeps_each_sender_to_one_transfer() -> None:
+    s = ExpenseGroup(name="test")
+    s.add_payment(amount=200, payer="a", members=["a", "c"], currency=Currency.TWD)
+    s.add_payment(amount=100, payer="b", members=["b", "c"], currency=Currency.TWD)
+    transactions = s.settle_up(method=SettlementMethod.RELAY)
 
     senders = [transaction.sender for transaction in transactions]
     assert len(senders) == len(set(senders))

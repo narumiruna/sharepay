@@ -142,7 +142,7 @@ def settle(
     settlement_method: Annotated[
         SettlementMethod,
         typer.Option("--settlement-method", case_sensitive=False, help="Settlement method."),
-    ] = SettlementMethod.RELAY,
+    ] = SettlementMethod.MAX_DEBTOR,
 ) -> None:
     """Print the transactions needed to settle payments from a CSV file or Google Sheet."""
     if (file is None) == (sheet is None):
