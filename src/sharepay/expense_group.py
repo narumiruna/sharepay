@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import logging
+from enum import StrEnum
 
 import pandas as pd
 from pydantic import BaseModel
@@ -19,6 +20,11 @@ from .utils import read_google_sheet
 logger = logging.getLogger(__name__)
 
 DEFAULT_CURRENCY = Currency.TWD
+
+
+class SettlementMethod(StrEnum):
+    RELAY = "relay"
+    MAX_DEBTOR = "max-debtor"
 
 
 class ExpenseGroup(BaseModel):
@@ -79,12 +85,25 @@ class ExpenseGroup(BaseModel):
             self.balances[creditor].value -= amount
             self.balances[debtor].value += amount
 
-    def settle_up(self, epsilon: float = 1e-6) -> list[Transaction]:
+    def settle_up(
+        self,
+        epsilon: float = 1e-6,
+        method: SettlementMethod | str = SettlementMethod.RELAY,
+    ) -> list[Transaction]:
         self.reset_balance()
         self.calculate_balance()
 
-        transactions = []
         balances = copy.deepcopy(list(self.balances.values()))
+        settlement_method = SettlementMethod(method)
+        if settlement_method is SettlementMethod.RELAY:
+            return self._settle_up_relay(balances, epsilon)
+        if settlement_method is SettlementMethod.MAX_DEBTOR:
+            return self._settle_up_max_debtor(balances, epsilon)
+
+        raise NotImplementedError(f"Unhandled settlement method: {settlement_method}")
+
+    def _settle_up_relay(self, balances: list[Balance], epsilon: float) -> list[Transaction]:
+        transactions: list[Transaction] = []
         while len(balances) > 1:
             balances = sorted(balances, key=lambda x: x.value)
 
@@ -106,6 +125,40 @@ class ExpenseGroup(BaseModel):
             )
             sender.value -= amount
             recipient.value += amount
+
+        return transactions
+
+    def _settle_up_max_debtor(self, balances: list[Balance], epsilon: float) -> list[Transaction]:
+        creditors = sorted(
+            (balance for balance in balances if balance.value < -epsilon),
+            key=lambda balance: (balance.value, balance.owner),
+        )
+        debtors = sorted(
+            (balance for balance in balances if balance.value > epsilon),
+            key=lambda balance: (-balance.value, balance.owner),
+        )
+        if not creditors or not debtors:
+            return []
+
+        hub = debtors[0]
+        transactions = [
+            Transaction(
+                sender=hub.owner,
+                recipient=creditor.owner,
+                amount=-creditor.value,
+                currency=self.currency,
+            )
+            for creditor in creditors
+        ]
+        transactions.extend(
+            Transaction(
+                sender=debtor.owner,
+                recipient=hub.owner,
+                amount=debtor.value,
+                currency=self.currency,
+            )
+            for debtor in debtors[1:]
+        )
 
         return transactions
 

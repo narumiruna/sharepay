@@ -182,6 +182,20 @@ def test_settle_rejects_alias_with_multiple_equals(tmp_path: Path) -> None:
     assert "Alias must use FROM=TO format." in result.output
 
 
+def test_settle_settlement_method_max_debtor(tmp_path: Path) -> None:
+    csv_path = _write_payments_csv(
+        tmp_path,
+        'amount,payer,members,currency\n200,a,"a,c",TWD\n100,b,"b,d",TWD\n',
+    )
+
+    result = runner.invoke(app, ["settle", "--file", str(csv_path), "--settlement-method", "max-debtor"])
+
+    assert result.exit_code == 0
+    _assert_settlement(result.stdout, "c", "a", "100.00 TWD")
+    _assert_settlement(result.stdout, "c", "b", "50.00 TWD")
+    _assert_settlement(result.stdout, "d", "c", "50.00 TWD")
+
+
 def test_settle_currency_option_is_case_insensitive(tmp_path: Path) -> None:
     csv_path = _write_payments_csv(
         tmp_path,
