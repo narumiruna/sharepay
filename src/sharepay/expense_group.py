@@ -100,7 +100,7 @@ class ExpenseGroup(BaseModel):
         if settlement_method is SettlementMethod.MAX_DEBTOR:
             return self._settle_up_max_debtor(balances, epsilon)
 
-        raise AssertionError("unreachable")
+        raise NotImplementedError(f"Unhandled settlement method: {settlement_method}")
 
     def _settle_up_relay(self, balances: list[Balance], epsilon: float) -> list[Transaction]:
         transactions: list[Transaction] = []
